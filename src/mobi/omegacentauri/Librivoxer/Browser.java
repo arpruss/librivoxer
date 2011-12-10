@@ -22,17 +22,18 @@ public class Browser extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        createDBFromAssets();
+        createDBFromSplit();
+//        createDBFromXML();
     }
-    
-    
-    void createDBFromAssets() {
+
+
+    void createDBFromSplit() {
     	File dbFile = getDatabasePath(Book.DB_FILENAME);
     	if (dbFile.exists())
     		return;
-    	
+
     	OutputStream out;
-    	
+
 		try {
 			out = new FileOutputStream(dbFile);
 		} catch (FileNotFoundException e1) {
@@ -100,8 +101,12 @@ public class Browser extends Activity {
     	Log.v("Book", "count: "+books.size());
     }
     
-    void createDB() {
-    	SQLiteDatabase db = openOrCreateDatabase("books.db", 
+    void createDBFromXML() {
+    	File dbFile = getDatabasePath(Book.DB_FILENAME);
+    	if (dbFile.exists())
+    		dbFile.delete();
+
+    	SQLiteDatabase db = openOrCreateDatabase(Book.DB_FILENAME,
     			SQLiteDatabase.CREATE_IF_NECESSARY, null);
     	Book.createTable(db);
     	boolean done = false;

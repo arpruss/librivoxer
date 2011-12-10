@@ -28,43 +28,43 @@ public class BookHandler extends DefaultHandler {
 		super.endElement(uri, localName, name);
 		if (curBook != null) {
 			if (localName.equalsIgnoreCase(Book.AUTHOR)) {
-				curBook.author = builder.toString();
+				curBook.author = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.AUTHOR2)) {
-				curBook.author2 = builder.toString();
+				curBook.author2 = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.CATEGORY)) {
-				curBook.category = builder.toString();
+				curBook.category = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.COMPLETED)) {
-				curBook.completed = builder.toString();
+				curBook.completed = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.COPYRIGHTYEAR)) {
-				curBook.copyrightyear = builder.toString();
+				curBook.copyrightyear = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.DESCRIPTION)) {
-				curBook.description = builder.toString();
+				curBook.description = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.ETEXT)) {
-				curBook.etext = builder.toString();
+				curBook.etext = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.GENRE)) {
-				curBook.genre = builder.toString();
+				curBook.genre = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.LANGUAGE)) {
-				curBook.language = builder.toString();
+				curBook.language = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.RSSURL)) {
-				curBook.rssurl = builder.toString();
+				curBook.rssurl = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.TITLE)) {
-				curBook.title = builder.toString();
+				curBook.title = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.TOTALTIME)) {
-				curBook.totaltime = builder.toString();
+				curBook.totaltime = getText();
 			}
 			else if (localName.equalsIgnoreCase(Book.TRANSLATOR)) {
-				curBook.translator = builder.toString();
+				curBook.translator = getText();
 			}
 			else if (localName.equalsIgnoreCase("book")) {
 				if (0 <= curBook.id) {
@@ -73,6 +73,10 @@ public class BookHandler extends DefaultHandler {
 			}
 			builder.setLength(0);
 		}
+	}
+	
+	private String getText() {
+		return builder.toString().trim();
 	}
 	
 	@Override

@@ -2,6 +2,7 @@ package mobi.omegacentauri.Librivoxer;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 public class Book {
 	// These tags are both for xml and sqlite
@@ -58,6 +59,7 @@ public class Book {
 		values.put(TITLE, title);
 		values.put(TOTALTIME, totaltime);
 		values.put(TRANSLATOR, translator);
+		if (id == 5680) Log.v("Book", ">"+title+"<");
 		db.insert(BOOK_TABLE, null, values);
 	}
 	
