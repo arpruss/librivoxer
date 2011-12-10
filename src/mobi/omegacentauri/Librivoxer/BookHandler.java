@@ -48,8 +48,8 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.ETEXT)) {
 				curBook.etext = getText();
 			}
-			else if (localName.equalsIgnoreCase(Book.GENRE)) {
-				curBook.genre = getText();
+			else if (localName.equalsIgnoreCase(Book.XMLGENRE)) {
+				curBook.setGenresFromXML(getText());
 			}
 			else if (localName.equalsIgnoreCase(Book.LANGUAGE)) {
 				curBook.language = getText();
@@ -92,7 +92,7 @@ public class BookHandler extends DefaultHandler {
 		super.startElement(uri, localName, name, attributes);
 		if (localName.equalsIgnoreCase("book")) {
 			curBook = new Book();
-			String value = attributes.getValue(Book.ID);
+			String value = attributes.getValue(Book.XMLID);
 			if (value != null) {
 				try {
 					curBook.id = Integer.parseInt(value);

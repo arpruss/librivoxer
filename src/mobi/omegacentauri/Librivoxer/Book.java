@@ -1,6 +1,9 @@
 package mobi.omegacentauri.Librivoxer;
 
+import java.util.Arrays;
+
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
@@ -20,8 +23,10 @@ public class Book {
 	public String etext = "";
 	public static final String CATEGORY = "category";
 	public String category = "";
-	public static final String GENRE = "genre";
-	public String genre = "";
+	public static final String XMLGENRE = "genre";
+	public static final String DBGENRE_PREFIX = "genre";
+	public static final int MAX_GENRES = 16;
+	public String[] genres = new String[MAX_GENRES];
 	public static final String LANGUAGE = "language";
 	public String language = "";
 	public static final String RSSURL = "rssurl";
@@ -36,8 +41,65 @@ public class Book {
 	public String completed = "";
 	public static final String DESCRIPTION = "description";
 	public String description = "";
-	public static final String ID = "id";
+	public static final String DBID = "_id";
+	public static final String XMLID = "id";
+	public static final String INSTALLED = "installed";
+	public String installed = "";
 	public int id;
+	public static final String[] standardGenres = {
+		"Adventure",
+		"Advice",
+		"Ancient Texts",
+		"Animals",
+		"Art",
+		"Biography",
+		"Children",
+		"Classics (antiquity)",
+		"Comedy",
+		"Cookery",
+		"Economics/Political Economy",
+		"Epistolary fiction",
+		"Erotica",
+		"Essay/Short nonfiction",
+		"Fairy tales",
+		"Fantasy",
+		"Fiction",
+		"Historical Fiction",
+		"History",
+		"Holiday",
+		"Horror/Ghost stories",
+		"Humor",
+//		"Humour",
+		"Instruction",
+		"Languages",
+//		"Literatur",
+		"Literature",
+		"Memoirs",
+		"Music",
+		"Mystery",
+		"Myths/Legends",
+		"Nature",
+		"Philosophy",
+		"Play",
+		"Poetry",
+		"Politics",
+		"Psychology",
+		"Religion",
+		"Romance",
+		"Satire",
+		"Science",
+		"Science fiction",
+		"Sea stories",
+		"Short",
+		"Short stories",
+		"Spy stories",
+		"Teen/Young adult",
+		"Tragedy",
+		"Travel",
+		"War stories",
+		"Westerns"		
+	};
+	public static String QUERY_COLS = DBID+","+AUTHOR+","+AUTHOR2+","+TITLE;
 	
 	public Book() {
 		id = -1;
@@ -45,7 +107,7 @@ public class Book {
 	
 	public void saveToDB(SQLiteDatabase db) {
 		ContentValues values = new ContentValues();
-		values.put(ID, id);
+		values.put(DBID, id);
 		values.put(AUTHOR, author);
 		values.put(AUTHOR2, author2);
 		values.put(CATEGORY, category);
@@ -53,31 +115,125 @@ public class Book {
 		values.put(COPYRIGHTYEAR, copyrightyear);
 		values.put(DESCRIPTION, description);
 		values.put(ETEXT, etext);
-		values.put(GENRE, genre);
+		for (int i=0; i<MAX_GENRES; i++) {
+			values.put(DBGENRE_PREFIX+i, genres[i]);
+		}
 		values.put(LANGUAGE, language);
 		values.put(RSSURL, rssurl);
 		values.put(TITLE, title);
 		values.put(TOTALTIME, totaltime);
 		values.put(TRANSLATOR, translator);
-		if (id == 5680) Log.v("Book", ">"+title+"<");
+		values.put(INSTALLED, installed);
 		db.insert(BOOK_TABLE, null, values);
 	}
 	
 	public static void createTable(SQLiteDatabase db) {
-    	db.execSQL("CREATE TABLE "+BOOK_TABLE+" ("+
-				Book.ID+" INTEGER PRIMARY KEY,"+
+		String create = "CREATE TABLE "+BOOK_TABLE+" ("+
+				Book.DBID+" INTEGER PRIMARY KEY,"+
 				Book.AUTHOR+" TEXT,"+
 				Book.AUTHOR2+" TEXT,"+
 				Book.CATEGORY+" TEXT,"+
 				Book.COMPLETED+" TEXT,"+
 				Book.COPYRIGHTYEAR+" TEXT,"+
 				Book.DESCRIPTION+" TEXT,"+
-				Book.ETEXT+" TEXT,"+
-				Book.GENRE+" TEXT,"+
+				Book.ETEXT+" TEXT,";
+		
+		for (int i=0; i<MAX_GENRES; i++)
+			create += (DBGENRE_PREFIX+i)+" TEXT,";
+		
+		create +=
 				Book.LANGUAGE+" TEXT,"+
 				Book.RSSURL+" TEXT,"+
 				Book.TITLE+" TEXT,"+
 				Book.TOTALTIME+ " TEXT,"+
-				Book.TRANSLATOR+ " TEXT);");		
+				Book.TRANSLATOR+ " TEXT,"+
+				Book.INSTALLED+ " TEXT);";
+				
+
+         db.execSQL(create);
+	}
+
+	public void setGenresFromXML(String genre) {
+		String[] genres = genre.split(",\\s*");
+		setGenres(genres);
+	}
+
+	public void setGenres(String[] genres) {
+		int i;
+		for (i = 0; i < MAX_GENRES && i < genres.length; i++) {
+			String g = genres[i].trim();
+			if (g.equals("Literatur"))
+				g = "Literature";
+			else if (g.equals("Humour"))
+				g = "Humor";
+			int j = Arrays.binarySearch(standardGenres, g);
+			if (0 <= j) {
+				this.genres[i] = Integer.toString(j);
+			}
+			else {
+				this.genres[i] = g;
+			}
+		}
+		
+		for (; i < MAX_GENRES ; i++)
+			this.genres[i] = "";
+	}
+
+	public String[] getGenres() {
+		return genres;
+	}
+	
+	public static String abbreviateGenre(String genre) {
+		int j = Arrays.binarySearch(standardGenres, genre);
+		if (0 <= j) {
+			return Integer.toString(j);
+		}
+		else {
+			return genre;
+		}
+	}
+	
+	public static String getGenreColumns() {
+		String cols = "";
+		
+		for (int i=0; i<MAX_GENRES; i++) {
+			if (0<i)
+				cols += ",";
+			cols += DBGENRE_PREFIX+i;
+		}
+		
+		return cols;
+	}
+	
+	public static String[] getAuthors(SQLiteDatabase db) {
+		Cursor c = db.rawQuery("SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ " UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE,
+				new String[] {});
+		c.moveToFirst();
+		int count;
+		if (c.getString(0).equals("")) {
+			count = c.getCount() - 1;
+			c.moveToNext();
+		}
+		else {
+			count = c.getCount();
+		}
+		String[] authors = new String[count];
+		for (int i=0; i<count; i++) {
+			authors[i] = c.getString(0);
+			c.moveToNext();
+		}
+		return authors;
+	}
+
+	public static Cursor queryGenre(SQLiteDatabase db, String string) {
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
+		   " WHERE \""+abbreviateGenre(string)+"\" IN ("+getGenreColumns()+")";
+		return db.rawQuery(query, new String[]{});
+	}
+
+	public static Cursor queryAuthor(SQLiteDatabase db, String string) {
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
+		   " WHERE \""+string+"\" IN ("+AUTHOR+","+AUTHOR2+")";
+		return db.rawQuery(query, new String[]{});
 	}
 }
