@@ -6,6 +6,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import android.util.Log;
+
 public class BookHandler extends DefaultHandler {
 	private Book curBook;
 	private StringBuilder builder;
@@ -86,7 +88,7 @@ public class BookHandler extends DefaultHandler {
 		super.startElement(uri, localName, name, attributes);
 		if (localName.equalsIgnoreCase("book")) {
 			curBook = new Book();
-			String value = attributes.getValue("id");
+			String value = attributes.getValue(Book.ID);
 			if (value != null) {
 				try {
 					curBook.id = Integer.parseInt(value);
