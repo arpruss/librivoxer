@@ -282,26 +282,6 @@ public class Browser extends Activity {
 		return true;
     }
     
-    private void parseToList() {
-    	boolean done = false;
-    	ArrayList<Book> books = new ArrayList<Book>();
-		Log.v("Book", "parse");
-    	
-    	for (int i=1; i<100 & !done; i++ ) {
-    		try {
-    			Log.v("Book", "parsing "+i);
-    			ParseToList pa = new ParseToList(getAssets().open("catalog"+i+".xml"), books);
-    			pa.parse();
-    	    	Log.v("Book", "count: "+books.size());
-    		}
-    		catch (IOException e) {
-    			done = true;
-    		}
-    	}
-		
-    	Log.v("Book", "count: "+books.size());
-    }
-    
     private void createDBFromXML() {
     	File dbFile = getDatabasePath(Book.DB_FILENAME);
     	if (dbFile.exists())
