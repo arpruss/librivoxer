@@ -8,12 +8,9 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -25,9 +22,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,7 +55,6 @@ public class ItemView extends Activity {
     	
     	TextView info = (TextView)findViewById(R.id.info);
     	info.setText(Html.fromHtml(getInfo()));
-    	info.setMovementMethod(new ScrollingMovementMethod());
 	}
 	
 	private String getInfo() {
@@ -72,10 +66,6 @@ public class ItemView extends Activity {
 		return "<b>"+author+"</b>, <i>"+data.get(Book.TITLE)+"</i><br/>" +
 		data.get(Book.DESCRIPTION);
 	}
-	
-	public void downloadClick(View v) {
-		new DownloadTask().execute();
-	}
         
 	@Override
 	public void onResume() {
@@ -84,8 +74,7 @@ public class ItemView extends Activity {
 
 
     private class DownloadTask extends AsyncTask<Void, Integer, String> {
-    	private static final String ZIP_TEMP = "mp3files.zip";
-		ProgressDialog progress;
+    	ProgressDialog progress;
     	
     	public DownloadTask() {
     	}
@@ -101,17 +90,9 @@ public class ItemView extends Activity {
     	}
 
     	protected void onProgressUpdate(Integer... p) {
-    		if (p[2] == 1) {
-    			progress.setMessage("Unzipping...");
-    		}
-    		if (p[1] < 0) {
-    			progress.setIndeterminate(true);
-    		}
-    		else {
-    			progress.setIndeterminate(false);
-        		progress.setMax(p[1]);
-        		progress.setProgress(p[0]);
-    		}
+    		progress.setIndeterminate(false);
+    		progress.setMax(p[1]);
+    		progress.setProgress(p[0]);
     	}
     	
 		@Override
@@ -119,75 +100,67 @@ public class ItemView extends Activity {
 			ArrayList<String> did = new ArrayList<String>();
 			try {
 				URL url;
+				if (options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG)) {
+					url = new URL(data.get(Book.RSSURL).replace("/rss/", "/rssogg/"));
+				}
+				else {
+					url = new URL(data.get(Book.RSSURL));
+				}
+				ParseRSS parse = new ParseRSS(url);
+				parse.parse();			
+				List<URL> list = parse.getList();
+				String b = parse.getLink().replaceAll("/$","").replaceAll(".*/","");
+				String dir = getBookDir(b);
 				
-				url = new URL(data.get(Book.ZIPFILE));
-
-				String dir = getBookDir(data.get(Book.ZIPFILE));
-
-				Log.v("Book", "Downloading "+url+" to:"+dir);
-				File zipFile = new File(dir+"/"+ZIP_TEMP);
-				download(url, zipFile);
-				unzip(dir, zipFile);
-				zipFile.delete();
+				publishProgress(1, list.size()+1);
 				
+				for (int i=0; i<list.size(); i++) {
+					String filename = list.get(i).getPath().replaceAll(".*/", "");
+					String path = dir+"/"+filename;
+					download(list.get(i), path);
+					did.add(path);
+					publishProgress(2+i, list.size()+1);
+				}
+
 				return dir;
 			}
 			catch (IOException e) {
-				Log.v("Book", "Error "+e);
 				for (int i=0; i<did.size(); i++) {
 					(new File(did.get(i))).delete();
 				}
 				return null;
 			}
 		}
-		
-		private String getBookDir(String zip) {
-			File zipFile = new File(zip);
-			
-			String dir = Environment.getExternalStorageDirectory() + "/" + "Librivox";
-			(new File(dir)).mkdir();
-			
-			dir += "/" + zipFile.getName().replaceAll(".zip$", ""); 
-			
+
+		private String getBookDir(String b) {
+			String dir = Environment.getExternalStorageDirectory() + "/" + b;
 			File dirF = new File(dir);
 			dirF.mkdir();
 			return dir;
 		}
 		
-		private void download(URL url, File outFile) throws IOException {
+		private void download(URL url, String path) throws IOException {
+			File tmpFile = null;
 			InputStream in = null;
 			OutputStream out = null;
-			File tmpFile = null;
-			URLConnection connection = null;
 			
 			try {
 				final int bufferSize = 16384;
 				
-				Log.v("Book", "Starting download");
-				outFile.delete();
-
-				connection = url.openConnection();
-				int length = connection.getContentLength();
-				Log.v("Book", "length="+length);
-				
-				in = connection.getInputStream();
-				Log.v("Book", "opened stream");
-				tmpFile = new File(outFile.getPath()+".download");
-				Log.v("Book", "tmp:"+tmpFile.getPath());
-				out = new FileOutputStream(tmpFile);
-				Log.v("Book", "opened");
-				
-				int did = 0;
-				int count;
-				
 				byte[] buffer = new byte[bufferSize];
+							
+				in = url.openStream();
+				File outFile = new File(path);
+				outFile.delete();
+				tmpFile = File.createTempFile(path, "tmp");
+				out = new FileOutputStream(tmpFile);
+				
+				int count;
 				
 				while ((count = in.read(buffer, 0, bufferSize)) >= 0) {
 					if (isCancelled())
-						throw new IOException("canceled"); // TODO: be nicer
+						throw new IOException(); // TODO: be nicer
 					out.write(buffer, 0, count);
-					publishProgress(did, length, 0);
-					did += count;
 				}
 				out.close();
 				out = null;
