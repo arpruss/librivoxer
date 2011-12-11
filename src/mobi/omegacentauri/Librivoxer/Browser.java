@@ -43,7 +43,7 @@ public class Browser extends Activity {
 	private String[] selectedItem;
 	private SQLiteDatabase db;
 	private ListView listView;
-
+	private Cursor cursor;
 	
 	SharedPreferences options;
 	
@@ -79,6 +79,8 @@ public class Browser extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
+		
+		closeCursor(); // TODO: deactivate, not close
 		SharedPreferences.Editor ed = options.edit();
 		ed.putInt(Options.PREF_CURRENT_LIST, currentList);
         for (int i=0; i < NUM_LISTS; i++)
@@ -88,6 +90,15 @@ public class Browser extends Activity {
 	}
 	
 	void populateList() {
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View v, int position,
+					long id) {
+				select(position);				
+			}        	
+        });
+		
 		switch (currentList) {
 		case 0:
 			setArrayList(topList);
@@ -104,14 +115,18 @@ public class Browser extends Activity {
 			}
 			break;
 		case 2:
-			if (selectedItem[0].equals(GENRE))
+			if (selectedItem[0].equals(GENRE)) {
 				setCursorList(Book.queryGenre(db, selectedItem[1]));
-			else if (selectedItem[0].equals(AUTHOR))
+			}
+			else if (selectedItem[0].equals(AUTHOR)) {
 				setCursorList(Book.queryAuthor(db, selectedItem[1]));
+			}
+			break;
 		}
 	}
 	
 	private void select(int position) {
+		Log.v("Book", "currentList = "+currentList+" position="+position);
 		if (currentList == 0 || (currentList == 1 && selectedItem[0] != ALL)) {
 			String text = (String)listView.getAdapter().getItem(position);
 			Log.v("Book", "Select "+text);
@@ -120,11 +135,20 @@ public class Browser extends Activity {
 			populateList();
 		}		
 		else if (currentList == 2 || (currentList == 1 && selectedItem[0] == ALL )) {
-			Cursor cursor = ((CursorAdapter)listView.getAdapter()).getCursor();
+			Log.v("Book", "getting");
 			cursor.moveToPosition(position);
 			Intent i = new Intent(this, ItemView.class);
-			i.putExtra(Book.DBID, cursor.getInt(0));
+			int id = cursor.getInt(0);
+			Log.v("Book", "id = "+id);
+			i.putExtra(Book.DBID, id);
 			startActivity(i);
+		}
+	}
+	
+	private void closeCursor() {
+		if (cursor != null) {
+			cursor.close();
+			cursor = null;
 		}
 	}
 	
@@ -132,6 +156,10 @@ public class Browser extends Activity {
 		final int author = cursor.getColumnIndex(Book.AUTHOR);
 		final int author2 = cursor.getColumnIndex(Book.AUTHOR2);
 		final int title = cursor.getColumnIndex(Book.TITLE);
+
+		closeCursor();
+		this.cursor = cursor;
+		
 		CursorAdapter adapter = new CursorAdapter(this, cursor){
 
 			@Override
@@ -177,15 +205,6 @@ public class Browser extends Activity {
 			return v;
 		}				
 	});
-		listView.setOnItemClickListener(new OnItemClickListener() {
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View v, int position,
-					long id) {
-				select(position);				
-			}        	
-        });
-
 	}
 	
     @Override

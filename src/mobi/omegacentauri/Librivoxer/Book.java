@@ -1,6 +1,8 @@
 package mobi.omegacentauri.Librivoxer;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -224,6 +226,7 @@ public class Book {
 			authors[i] = c.getString(0);
 			c.moveToNext();
 		}
+		c.close();
 		return authors;
 	}
 
@@ -240,6 +243,20 @@ public class Book {
 		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ " IN ("+AUTHOR+","+AUTHOR2+")";
 		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{ });
+	}
+	
+	public static Map<String,String> loadEntry(SQLiteDatabase db, int id) {
+		String query = "SELECT * FROM "+BOOK_TABLE+" WHERE "+DBID+"='"+id+"'";
+		Log.v("Book", query);
+		Cursor cursor = db.rawQuery(query, new String[] {});
+		cursor.moveToFirst();
+		int cols = cursor.getColumnCount();
+		HashMap<String,String> map = new HashMap<String,String>();
+		for (int i=0; i<cols; i++) {
+			map.put(cursor.getColumnName(i), cursor.getString(i));
+		}
+		cursor.close();
+		return map;
 	}
 
 	public static Cursor queryAll(SQLiteDatabase db) {
