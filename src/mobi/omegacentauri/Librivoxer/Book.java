@@ -45,9 +45,11 @@ public class Book {
 	public String completed = "";
 	public static final String DESCRIPTION = "description";
 	public String description = "";
+	public static final String ZIPFILE = "zipfile";
+	public String zipfile = "";
 	public static final String DBID = "_id";
 	public static final String XMLID = "id";
-	public static final String INSTALLED = "installed";
+	public static final String INSTALLED = "installed";	
 	public String installed = "";
 	public int id;
 	public static final String[] standardGenres = {
@@ -128,6 +130,7 @@ public class Book {
 		values.put(TOTALTIME, totaltime);
 		values.put(TRANSLATOR, translator);
 		values.put(INSTALLED, installed);
+		values.put(ZIPFILE, zipfile);
 		db.insert(BOOK_TABLE, null, values);
 	}
 	
@@ -151,6 +154,7 @@ public class Book {
 				Book.TITLE+" TEXT,"+
 				Book.TOTALTIME+ " TEXT,"+
 				Book.TRANSLATOR+ " TEXT,"+
+				Book.ZIPFILE+" TEXT,"+
 				Book.INSTALLED+ " TEXT);";
 				
 
@@ -220,7 +224,7 @@ public class Book {
 	public static Cursor queryGenre(SQLiteDatabase db, String string) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
 		   " WHERE "+DatabaseUtils.sqlEscapeString(abbreviateGenre(string))+
-		   " IN ("+getGenreColumns()+")";
+		   " IN ("+getGenreColumns()+") ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{});
 	}
@@ -248,7 +252,7 @@ public class Book {
 	}
 	
 	public static Cursor queryAll(SQLiteDatabase db) {
-		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE + " ORDER BY "+AUTHOR;
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE + " ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{});
 	}

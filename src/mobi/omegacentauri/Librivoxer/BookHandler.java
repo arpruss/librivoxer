@@ -66,6 +66,9 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.TRANSLATOR)) {
 				curBook.translator = getText();
 			}
+			else if (localName.equalsIgnoreCase(Book.ZIPFILE)) {
+				curBook.zipfile = getText();
+			}
 			else if (localName.equalsIgnoreCase("book")) {
 				if (curBook.author.length() == 0) {
 					if (curBook.author2.length() == 0) 
@@ -95,7 +98,6 @@ public class BookHandler extends DefaultHandler {
 	public void startDocument() throws SAXException {
 		super.startDocument();
 		builder = new StringBuilder();
-		saver.saveStart(); 
 	}
 	
 	@Override
@@ -118,6 +120,5 @@ public class BookHandler extends DefaultHandler {
 	
 	@Override
 	public void endDocument() {
-		saver.saveDone();
 	}	
 }
