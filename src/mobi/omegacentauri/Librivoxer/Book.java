@@ -210,8 +210,8 @@ public class Book {
 	}
 	
 	public static Cursor queryAuthors(SQLiteDatabase db) {
-		String query = "(SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ 
-		") UNION (SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>'')";
+		String query = "SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ 
+		" UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>''";
 		Log.v("Book", query);
 		return db.rawQuery(query,
 				new String[] {});
@@ -227,7 +227,8 @@ public class Book {
 
 	public static Cursor queryAuthor(SQLiteDatabase db, String string) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
-		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ " IN ("+AUTHOR+","+AUTHOR2+")";
+		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ 
+		   " IN ("+AUTHOR+","+AUTHOR2+") ORDER BY "+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{ });
 	}
@@ -247,7 +248,7 @@ public class Book {
 	}
 	
 	public static Cursor queryAll(SQLiteDatabase db) {
-		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE;
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE + " ORDER BY "+AUTHOR;
 		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{});
 	}

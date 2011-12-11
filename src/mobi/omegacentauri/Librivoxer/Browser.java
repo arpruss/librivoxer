@@ -372,10 +372,13 @@ public class Browser extends Activity {
 				populateList();
 			}
 			else {
-				if (currentList == 1 && selectedItem[0] == AUTHORS) {
+				Log.v("Book", "cl="+currentList+" si="+selectedItem[0]);
+				if (currentList == 1 && selectedItem[0].equals(AUTHORS)) {
+					Log.v("Book", "sal");
 					setArrayList(cursorToArray(cursor));
 				}
 				else {
+					Log.v("Book", "scl");
 					setCursorList(cursor);
 				}
 			}
