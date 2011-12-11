@@ -1,7 +1,8 @@
 $n = 1;
+open I, "<:encoding(UTF-8)", "catalog.xml";
 open O, ">:encoding(UTF-8)", "assets/catalog$n.xml";
 $count = 0;
-while(<>) {
+while(<I>) {
     if (/^<\/results>/) {
         last;
     }

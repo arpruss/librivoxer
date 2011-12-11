@@ -28,10 +28,10 @@ public class BookHandler extends DefaultHandler {
 		super.endElement(uri, localName, name);
 		if (curBook != null) {
 			if (localName.equalsIgnoreCase(Book.AUTHOR)) {
-				curBook.author = getText();
+				curBook.author = cleanAuthor(getText());
 			}
 			else if (localName.equalsIgnoreCase(Book.AUTHOR2)) {
-				curBook.author2 = getText();
+				curBook.author2 = cleanAuthor(getText());
 			}
 			else if (localName.equalsIgnoreCase(Book.CATEGORY)) {
 				curBook.category = getText();
@@ -79,11 +79,15 @@ public class BookHandler extends DefaultHandler {
 		return builder.toString().trim();
 	}
 	
+	private static String cleanAuthor(String s) {
+		return s.replaceAll("\\.([A-Z])", ". $1");
+	}
+	
 	@Override
 	public void startDocument() throws SAXException {
 		super.startDocument();
 		builder = new StringBuilder();
-		saver.saveStart();
+		saver.saveStart(); 
 	}
 	
 	@Override

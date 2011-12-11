@@ -3,7 +3,9 @@ package mobi.omegacentauri.Librivoxer;
 import java.util.Arrays;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
@@ -227,13 +229,27 @@ public class Book {
 
 	public static Cursor queryGenre(SQLiteDatabase db, String string) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
-		   " WHERE \""+abbreviateGenre(string)+"\" IN ("+getGenreColumns()+")";
+		   " WHERE "+DatabaseUtils.sqlEscapeString(abbreviateGenre(string))+
+		   " IN ("+getGenreColumns()+")";
+		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{});
 	}
 
 	public static Cursor queryAuthor(SQLiteDatabase db, String string) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
-		   " WHERE \""+string+"\" IN ("+AUTHOR+","+AUTHOR2+")";
+		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ " IN ("+AUTHOR+","+AUTHOR2+")";
+		Log.v("Book", query);
+		return db.rawQuery(query, new String[]{ });
+	}
+
+	public static Cursor queryAll(SQLiteDatabase db) {
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE;
+		Log.v("Book", query);
 		return db.rawQuery(query, new String[]{});
+	}
+
+	public static SQLiteDatabase getDB(Context context) {
+		return SQLiteDatabase.openDatabase(context.getDatabasePath(Book.DB_FILENAME).getPath(), 
+    			null, SQLiteDatabase.OPEN_READONLY);
 	}
 }

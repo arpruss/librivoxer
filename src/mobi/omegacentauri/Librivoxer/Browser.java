@@ -10,9 +10,11 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -21,9 +23,12 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CursorAdapter;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -59,13 +64,17 @@ public class Browser extends Activity {
         listView = (ListView)findViewById(R.id.list); 
         
         createDBFromSplit();
-//        createDBFromXML();
-        
-    	db = openOrCreateDatabase(Book.DB_FILENAME,
-    			SQLiteDatabase.CREATE_IF_NECESSARY, null);    	
-    	
-    	populateList();
+//        createDBFromXML();        
     }
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		
+    	db = Book.getDB(this); 
+    	
+    	populateList();		
+	}
 	
 	@Override
 	public void onPause() {
@@ -74,7 +83,8 @@ public class Browser extends Activity {
 		ed.putInt(Options.PREF_CURRENT_LIST, currentList);
         for (int i=0; i < NUM_LISTS; i++)
         	ed.putString(Options.PREF_SELECTED_ITEM_PREFIX+i, selectedItem[i]);
-        ed.commit();        
+        ed.commit();
+        db.close();
 	}
 	
 	void populateList() {
@@ -90,27 +100,61 @@ public class Browser extends Activity {
 				setArrayList(Book.getAuthors(db));
 			}
 			else if (selectedItem[0].equals(ALL)) {
-//				setDBList("select * from "+Book.BOOK_TABLE);
+				setCursorList(Book.queryAll(db));
 			}
 			break;
 		case 2:
 			if (selectedItem[0].equals(GENRE))
-				setCursorList(Book.queryGenre(db, selectedItem[0]));
+				setCursorList(Book.queryGenre(db, selectedItem[1]));
 			else if (selectedItem[0].equals(AUTHOR))
 				setCursorList(Book.queryAuthor(db, selectedItem[1]));
 		}
 	}
 	
 	private void select(int position) {
-		String text = (String)listView.getAdapter().getItem(position);
-		switch (currentList) {
-		case 0:
+		if (currentList == 0 || (currentList == 1 && selectedItem[0] != ALL)) {
+			String text = (String)listView.getAdapter().getItem(position);
 			Log.v("Book", "Select "+text);
-			selectedItem[0] = text;
+			selectedItem[currentList] = text;
 			currentList++;
 			populateList();
-			break;
+		}		
+		else if (currentList == 2 || (currentList == 1 && selectedItem[0] == ALL )) {
+			Cursor cursor = ((CursorAdapter)listView.getAdapter()).getCursor();
+			cursor.moveToPosition(position);
+			Intent i = new Intent(this, ItemView.class);
+			i.putExtra(Book.DBID, cursor.getInt(0));
+			startActivity(i);
 		}
+	}
+	
+	private void setCursorList(Cursor cursor) {
+		final int author = cursor.getColumnIndex(Book.AUTHOR);
+		final int author2 = cursor.getColumnIndex(Book.AUTHOR2);
+		final int title = cursor.getColumnIndex(Book.TITLE);
+		CursorAdapter adapter = new CursorAdapter(this, cursor){
+
+			@Override
+			public void bindView(View view, Context context, Cursor cursor) {
+				String authors = cursor.getString(author);
+				String a2 = cursor.getString(author2);
+				if (a2.length() > 0) {
+					authors += " & "+a2;
+				}
+				
+				((TextView)view.findViewById(R.id.text1))
+				.setText(authors);
+				((TextView)view.findViewById(R.id.text2))
+				.setText(cursor.getString(title));
+			}
+
+			@Override
+			public View newView(Context context, Cursor cursor, ViewGroup parent) {
+                View v = View.inflate(Browser.this, R.layout.twoline, null);
+                bindView(v, context, cursor);
+				return v;
+			}};
+		listView.setAdapter(adapter); 
 	}
 	
 	private void setArrayList(final String[] list) {
@@ -163,7 +207,7 @@ public class Browser extends Activity {
 
     private void createDBFromSplit() {
     	File dbFile = getDatabasePath(Book.DB_FILENAME);
-    	if (dbFile.exists())
+    	if (dbFile.exists() && dbFile.length() > 2000000)
     		return;
 
     	OutputStream out;
