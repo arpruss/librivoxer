@@ -209,25 +209,12 @@ public class Book {
 		return cols;
 	}
 	
-	public static String[] getAuthors(SQLiteDatabase db) {
-		Cursor c = db.rawQuery("SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ " UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE,
+	public static Cursor queryAuthors(SQLiteDatabase db) {
+		String query = "(SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ 
+		") UNION (SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>'')";
+		Log.v("Book", query);
+		return db.rawQuery(query,
 				new String[] {});
-		c.moveToFirst();
-		int count;
-		if (c.getString(0).equals("")) {
-			count = c.getCount() - 1;
-			c.moveToNext();
-		}
-		else {
-			count = c.getCount();
-		}
-		String[] authors = new String[count];
-		for (int i=0; i<count; i++) {
-			authors[i] = c.getString(0);
-			c.moveToNext();
-		}
-		c.close();
-		return authors;
 	}
 
 	public static Cursor queryGenre(SQLiteDatabase db, String string) {
@@ -258,7 +245,7 @@ public class Book {
 		cursor.close();
 		return map;
 	}
-
+	
 	public static Cursor queryAll(SQLiteDatabase db) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE;
 		Log.v("Book", query);

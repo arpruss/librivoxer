@@ -67,6 +67,14 @@ public class BookHandler extends DefaultHandler {
 				curBook.translator = getText();
 			}
 			else if (localName.equalsIgnoreCase("book")) {
+				if (curBook.author.length() == 0) {
+					if (curBook.author2.length() == 0) 
+						curBook.author = "unnamed";
+					else {
+						curBook.author = curBook.author2;
+						curBook.author2 = "";
+					}
+				}
 				if (0 <= curBook.id) {
 					saver.saveBook(curBook);
 				}
