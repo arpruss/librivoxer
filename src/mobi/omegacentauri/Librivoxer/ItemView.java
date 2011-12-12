@@ -11,11 +11,18 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +30,8 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.Html;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,6 +40,8 @@ public class ItemView extends Activity {
 	Map<String,String> data;
 	SharedPreferences options;
 	int id;
+	static public final String PARTIAL = "PARTIAL:";
+	static public final String FULL = "FULL:";
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,6 +68,45 @@ public class ItemView extends Activity {
     	info.setText(Html.fromHtml(getInfo()));
 	}
 	
+	@Override 
+	public void onResume() {
+		super.onResume();
+		
+		setButtons();
+	}
+	
+	public void setButtons() {
+		Button download;
+		Button delete;
+		Button play;
+		
+		download = (Button)findViewById(R.id.download);
+		play = (Button)findViewById(R.id.play);
+		delete = (Button)findViewById(R.id.delete);
+		
+		if (data.get(Book.INSTALLED).startsWith(FULL)) {
+			Log.v("Book", "full");
+			download.setVisibility(View.INVISIBLE);
+			play.setVisibility(View.VISIBLE);
+			delete.setVisibility(View.VISIBLE);
+		}
+		else if (data.get(Book.INSTALLED).startsWith(PARTIAL)) {
+			Log.v("Book", "partial");
+			download.setText("Continue download");
+			download.setVisibility(View.VISIBLE);
+			play.setVisibility(View.INVISIBLE);
+			delete.setVisibility(View.VISIBLE);
+		}
+		else {
+			Log.v("Book", "none");
+			download.setText("Download");
+			download.setVisibility(View.VISIBLE);
+			play.setVisibility(View.INVISIBLE);
+			delete.setVisibility(View.INVISIBLE);
+		}		
+	}
+		
+	
 	private String getInfo() {
 		String author = data.get(Book.AUTHOR);
 		String author2 = data.get(Book.AUTHOR2);
@@ -66,15 +116,39 @@ public class ItemView extends Activity {
 		return "<b>"+author+"</b>, <i>"+data.get(Book.TITLE)+"</i><br/>" +
 		data.get(Book.DESCRIPTION);
 	}
+	
+	public void setInstalled(String inst) {
+    	db = Book.getDB(this);
+    	String query = "UPDATE "+Book.BOOK_TABLE+" SET "+Book.INSTALLED+"="+
+			DatabaseUtils.sqlEscapeString(inst)+" WHERE "+Book.DBID+"='"+id+"'";
+    	Log.v("Book", query);
+    	db.execSQL(query);
+    	db.close();
+		data.put(Book.INSTALLED, inst);
+		Log.v("Book", inst);
+	}
+
+	public void downloadClick(View v) {
+		new DownloadTask().execute();
+	}
+	
+	public void deleteClick(View v) {
+		String inst = data.get(Book.INSTALLED);
+		int index = inst.indexOf(":");
+		if (index < 0)
+			return;
+		deleteDir(inst.substring(index+1));
+		setInstalled("");
+		setButtons();
+	}
+	
+	public void playClick(View v) {
+		Toast.makeText(ItemView.this, "Not yet implemented", 3000).show();
+	}
         
-	@Override
-	public void onResume() {
-		super.onResume();		
-	}	
-
-
-    private class DownloadTask extends AsyncTask<Void, Integer, String> {
-    	ProgressDialog progress;
+    public class DownloadTask extends AsyncTask<Void, Integer, String> {
+    	private ProgressDialog progress;
+    	private static final String CANCEL = "//cancel//";
     	
     	public DownloadTask() {
     	}
@@ -83,6 +157,11 @@ public class ItemView extends Activity {
     	protected void onPreExecute() {
     		progress = new ProgressDialog(ItemView.this);
     		progress.setCancelable(true);
+			progress.setOnCancelListener(new OnCancelListener(){
+				@Override
+				public void onCancel(DialogInterface arg0) {
+					DownloadTask.this.cancel(true);					
+				}});
     		progress.setMessage("Downloading "+data.get(Book.TITLE));
     		progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     		progress.setIndeterminate(true);
@@ -98,19 +177,39 @@ public class ItemView extends Activity {
 		@Override
 		protected String doInBackground(Void... arg0) {
 			ArrayList<String> did = new ArrayList<String>();
+			String dir = null;
 			try {
+				boolean ogg = options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG);
+				boolean oggRSS = false;
 				URL url;
-				if (options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG)) {
-					url = new URL(data.get(Book.RSSURL).replace("/rss/", "/rssogg/"));
+				
+				String rssURL = data.get(Book.RSSURL);
+				if (rssURL.length() == 0) {
+					rssURL = "http://librivox.org/rss/"+id;
 				}
-				else {
-					url = new URL(data.get(Book.RSSURL));
+				
+				if (ogg && rssURL.contains("/rss/")) {
+					rssURL = rssURL.replace("/rss/", "/rssogg/");
+					oggRSS = true;
 				}
+
+				Log.v("Book", rssURL);
+				url = new URL(rssURL);
 				ParseRSS parse = new ParseRSS(url);
-				parse.parse();			
+				parse.parse();
 				List<URL> list = parse.getList();
+				
+				if (ogg && (!oggRSS || list.size() == 0)) {
+					list = getOGGList(new URL(parse.getLink()));
+					if (list.size() == 0) {
+						throw(new IOException("Cannot find ogg files"));
+					}
+				}
+				
 				String b = parse.getLink().replaceAll("/$","").replaceAll(".*/","");
-				String dir = getBookDir(b);
+				dir = getBookDir(b);
+				
+				cleanDir(dir);
 				
 				publishProgress(1, list.size()+1);
 				
@@ -122,20 +221,63 @@ public class ItemView extends Activity {
 					publishProgress(2+i, list.size()+1);
 				}
 
+				setInstalled(FULL+dir);
 				return dir;
 			}
-			catch (IOException e) {
-				for (int i=0; i<did.size(); i++) {
-					(new File(did.get(i))).delete();
-				}
+			catch (SAXException e) {
+				Log.v("Book", ""+e);
 				return null;
+			}
+			catch (IOException e) {
+				Log.v("Book", "<"+e.toString()+">");
+				if (dir != null) {
+					if (did.size()==0) {
+						deleteDir(dir);
+						setInstalled("");
+					}
+					else {
+						setInstalled(PARTIAL+dir);
+					}
+				}
+				
+				if (e.toString().contains(CANCEL)) {
+					Log.v("Book", "exception:cancel");
+					runOnUiThread(new Runnable(){
+						@Override
+						public void run() {
+							Log.v("Book", "onui");
+							Toast.makeText(ItemView.this, "Canceled", 3000).show(); 
+							setButtons();			
+						}});
+					return null;
+				}
+				else {
+					return null;
+				}
 			}
 		}
 
+		private List<URL> getOGGList(URL url) throws IOException {
+			List<URL> list = new ArrayList<URL>();
+			String html = Utils.getStringFromURL(url);
+			Pattern pattern = Pattern.compile("<a\\s+href=['\"]([^'\"]+\\.ogg)['\"]",
+					Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+			Matcher matcher = pattern.matcher(html);
+			int pos = 0;
+			while (matcher.find(pos)) {
+				Log.v("Book", "found:"+matcher.group(1));
+				list.add(new URL(matcher.group(1)));
+				pos = matcher.end();
+			}
+			return list;
+		}
+		
 		private String getBookDir(String b) {
-			String dir = Environment.getExternalStorageDirectory() + "/" + b;
-			File dirF = new File(dir);
-			dirF.mkdir();
+			String dir = Environment.getExternalStorageDirectory() + "/" + "Librivox";
+			(new File(dir)).mkdir();
+			dir += "/" + b;
+			(new File(dir)).mkdir();
+			Log.v("Book", "dir:"+dir);
 			return dir;
 		}
 		
@@ -147,26 +289,32 @@ public class ItemView extends Activity {
 			try {
 				final int bufferSize = 16384;
 				
+				File outFile = new File(path);
+				if (outFile.exists())
+					return;
+
 				byte[] buffer = new byte[bufferSize];
 							
 				in = url.openStream();
-				File outFile = new File(path);
-				outFile.delete();
-				tmpFile = File.createTempFile(path, "tmp");
+				tmpFile = new File(path + ".download");
+				tmpFile.delete();
 				out = new FileOutputStream(tmpFile);
 				
 				int count;
 				
 				while ((count = in.read(buffer, 0, bufferSize)) >= 0) {
-					if (isCancelled())
-						throw new IOException(); // TODO: be nicer
+					if (isCancelled()) {
+						Log.v("Book", "throw");
+						throw new IOException(CANCEL); // TODO: be nicer
+					}
 					out.write(buffer, 0, count);
 				}
 				out.close();
 				out = null;
 				in.close();
 				in = null;
-				
+
+				Log.v("Book", "renaming");
 				tmpFile.renameTo(outFile);
 				tmpFile = null;
 			}
@@ -183,11 +331,23 @@ public class ItemView extends Activity {
 			if (dir == null) {
 				Toast.makeText(ItemView.this, "Error downloading", 3000).show();
 			}
-			else {
-				// TODO: mark in DB as downloaded
-				// TODO: set up option to play
-			}
+			setButtons();
 		}
     }
+    
+    static private void deleteDir(String dir) {
+    	File dirFile = new File(dir);
+    	for (File f: dirFile.listFiles()) {
+    		f.delete();
+    	}
+    	dirFile.delete();
+    }
 
+    static private void cleanDir(String dir) {
+    	File dirFile = new File(dir);
+    	for (File f: dirFile.listFiles()) {
+    		if (f.getPath().endsWith(".download"))
+    			f.delete();
+    	}
+    }
 }

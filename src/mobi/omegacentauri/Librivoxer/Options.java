@@ -9,4 +9,6 @@ public class Options extends PreferenceActivity {
 	static final String PREF_BASE = "Librivox";
 	static final String OPT_OGG = "ogg";
 	static final String OPT_MP3 = "mp3";
+	public static final String PREF_UPDATE_TRIED = "updateTried";
+	public static final String PREF_UPDATE_SUCCEEDED = "updateSucceeded";
 }

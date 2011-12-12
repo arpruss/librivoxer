@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 import android.app.ProgressDialog;
@@ -21,6 +23,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.SpannableString;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -66,7 +69,7 @@ public class Browser extends Activity {
         listView = (ListView)findViewById(R.id.list); 
         
         createDBFromSplit();
-//        createDBFromXML();        
+//        createDBFromXML();
     }
 	
 	@Override
@@ -91,7 +94,7 @@ public class Browser extends Activity {
         db.close();
 	}
 	
-	void populateList() {
+	synchronized void populateList() {
 		switch (currentList) {
 		case 0:
 			setArrayList(topList);
@@ -167,9 +170,9 @@ public class Browser extends Activity {
 				}
 
 				((TextView)view.findViewById(R.id.text1))
-				.setText(authors);
+				.setText(new SpannableString(authors));
 				((TextView)view.findViewById(R.id.text2))
-				.setText(cursor.getString(title));
+				.setText(new SpannableString(cursor.getString(title)));
 			}
 
 			@Override
@@ -205,7 +208,7 @@ public class Browser extends Activity {
 			}
 
 			((TextView)v.findViewById(R.id.text1))
-				.setText(list[position]);
+				.setText(new SpannableString( list[position]));
 			return v;
 		}				
 	});
@@ -295,7 +298,7 @@ public class Browser extends Activity {
     		try {
     			Log.v("Book", "parsing "+i);
     			ParseToDB pa = new ParseToDB(getAssets().open("catalog"+i+".xml"), db);
-    			pa.parse();
+    			pa.parse(false);
     		}
     		catch (IOException e) {
     			done = true;
@@ -304,8 +307,11 @@ public class Browser extends Activity {
     	db.close();
     }
 
-    private class PopulateListTask extends AsyncTask<Void, Void, Cursor> {
+    private class PopulateListTask extends AsyncTask<Void, Integer, Cursor> {
     	ProgressDialog progress;
+    	static final int UPDATING = 0;
+    	static final int SEARCHING = 1;
+    	int updated = 0;
     	
     	public PopulateListTask() {
     	}
@@ -314,12 +320,65 @@ public class Browser extends Activity {
     	protected void onPreExecute() {
     		progress = new ProgressDialog(Browser.this);
     		progress.setCancelable(false);
-    		progress.setMessage("Searching...");
     		progress.show();
+    	}
+
+    	protected void onProgressUpdate(Integer... p) {
+    		if (p[0] == UPDATING)
+    			progress.setMessage("Updating database...");
+    		else if (p[0] == SEARCHING)
+    			progress.setMessage("Searching...");
+    	}
+    	
+    	
+    	void updateDB() {
+    		if (System.currentTimeMillis() < 7l * 86400l * 1000l + 
+    				options.getLong(Options.PREF_UPDATE_SUCCEEDED, 0))
+    			return;
+    		if (System.currentTimeMillis() < 2l * 3600l * 1000l + 
+    				options.getLong(Options.PREF_UPDATE_TRIED, 0))
+    			return;
+    		
+    		publishProgress(UPDATING);
+
+    		try {
+				SharedPreferences.Editor ed = options.edit();
+				ed.putLong(Options.PREF_UPDATE_TRIED, System.currentTimeMillis());
+				ed.commit();
+				
+				int added = 0;
+				for(int pos = 0;; pos+=50) {
+					URL url;
+					
+					url = new URL("https://catalog.librivox.org/latestworks.xml?offset="+pos+"&limit=50"); 
+					InputStream stream = url.openStream();
+					ParseToDB parser = new ParseToDB(stream, db);
+					if (!parser.parse(true)) {
+						throw new IOException("parsing");
+					}					
+					added += parser.getAdded();
+					if (parser.didHitOld() || 0 == parser.getAdded())
+						break;
+				}
+				
+				ed = options.edit();
+				ed.putLong(Options.PREF_UPDATE_SUCCEEDED, System.currentTimeMillis());
+				ed.commit();
+				updated = added;
+			} catch (MalformedURLException e) {
+				updated = -1;
+				Log.v("Book", "Update "+e);
+			} catch (IOException e) {
+				updated = -1;
+				Log.v("Book", "Update "+e);
+			}    		
     	}
 
 		@Override
 		protected Cursor doInBackground(Void... arg0) {
+			updateDB();
+			
+			publishProgress(SEARCHING);
 			switch(currentList) {
 			case 1: 
 				if (selectedItem[0].equals(AUTHORS)) {
@@ -346,6 +405,15 @@ public class Browser extends Activity {
 		@Override
 		protected void onPostExecute(Cursor cursor) {
 			progress.dismiss();
+			Log.v("Book", "updated "+updated);
+			if (updated > 0) {
+				Toast.makeText(Browser.this, "Added "+updated+
+						(updated > 1 ? " items": " item") + " to database", 3000).show();
+			}
+			else if (updated < 0) {
+				Toast.makeText(Browser.this, "Database update unsuccessful", 3000).show();
+			}
+			
 			if (cursor == null) {
 				Toast.makeText(Browser.this, "Error searching", 3000).show();
 				currentList = 0;
@@ -354,11 +422,9 @@ public class Browser extends Activity {
 			else {
 				Log.v("Book", "cl="+currentList+" si="+selectedItem[0]);
 				if (currentList == 1 && selectedItem[0].equals(AUTHORS)) {
-					Log.v("Book", "sal");
 					setArrayList(cursorToArray(cursor));
 				}
 				else {
-					Log.v("Book", "scl");
 					setCursorList(cursor);
 				}
 			}
@@ -374,5 +440,5 @@ public class Browser extends Activity {
 			cursor.moveToNext();
 		}
 		return s;
-	}
+    }
 }

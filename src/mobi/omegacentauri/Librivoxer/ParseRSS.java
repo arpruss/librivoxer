@@ -45,7 +45,6 @@ public class ParseRSS extends DefaultHandler {
 	@Override
 	public void endElement(String uri, String localName, String name) throws SAXException {
 		super.endElement(uri, localName, name);
-		Log.v("Book", "/"+localName);
 		if (localName.equalsIgnoreCase("item")) {
 			inItem--;
 		}
@@ -58,7 +57,6 @@ public class ParseRSS extends DefaultHandler {
 			}
 			else if (inItem == 1) {
 				try {
-					Log.v("Book", "<"+builder.toString().trim()+">");
 					list.add(new URL(builder.toString().trim()));
 				} catch (MalformedURLException e) {
 				}
@@ -71,7 +69,6 @@ public class ParseRSS extends DefaultHandler {
 	public void startElement(String uri, String localName, String name, 
 			Attributes attributes) throws SAXException {
 		super.startElement(uri, localName, name, attributes);
-		Log.v("Book", localName);
 		if (localName.equalsIgnoreCase("item")) {
 			inItem++;
 		}

@@ -14,6 +14,8 @@ import android.util.Log;
 public class Book {
 	// These tags are both for xml and sqlite
 	
+	public static final String[] emptyStringArray = {};
+	
 	public static final String DB_FILENAME = "books.db";
 	
 	public static final String BOOK_TABLE = "tbl_books";
@@ -111,6 +113,16 @@ public class Book {
 		id = -1;
 	}
 	
+	public boolean existsInDB(SQLiteDatabase db) {
+		final String query = "SELECT 1 FROM "+BOOK_TABLE+ 
+		" WHERE "+ DBID +"='"+id+"'";
+
+		Cursor cursor = db.rawQuery(query, emptyStringArray);
+		Boolean exists = cursor.getCount()>0;
+		cursor.close();
+		return exists;
+	}
+	
 	public void saveToDB(SQLiteDatabase db) {
 		ContentValues values = new ContentValues();
 		values.put(DBID, id);
@@ -157,7 +169,6 @@ public class Book {
 				Book.ZIPFILE+" TEXT,"+
 				Book.INSTALLED+ " TEXT);";
 				
-
          db.execSQL(create);
 	}
 
@@ -217,8 +228,7 @@ public class Book {
 		String query = "SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ 
 		" UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>''";
 		Log.v("Book", query);
-		return db.rawQuery(query,
-				new String[] {});
+		return db.rawQuery(query, emptyStringArray);
 	}
 
 	public static Cursor queryGenre(SQLiteDatabase db, String string) {
@@ -226,7 +236,7 @@ public class Book {
 		   " WHERE "+DatabaseUtils.sqlEscapeString(abbreviateGenre(string))+
 		   " IN ("+getGenreColumns()+") ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
-		return db.rawQuery(query, new String[]{});
+		return db.rawQuery(query, emptyStringArray);
 	}
 
 	public static Cursor queryAuthor(SQLiteDatabase db, String string) {
@@ -234,7 +244,7 @@ public class Book {
 		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ 
 		   " IN ("+AUTHOR+","+AUTHOR2+") ORDER BY "+TITLE;
 		Log.v("Book", query);
-		return db.rawQuery(query, new String[]{ });
+		return db.rawQuery(query, emptyStringArray);
 	}
 	
 	public static Map<String,String> loadEntry(SQLiteDatabase db, int id) {
@@ -254,11 +264,11 @@ public class Book {
 	public static Cursor queryAll(SQLiteDatabase db) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE + " ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
-		return db.rawQuery(query, new String[]{});
+		return db.rawQuery(query, emptyStringArray);
 	}
 
 	public static SQLiteDatabase getDB(Context context) {
 		return SQLiteDatabase.openDatabase(context.getDatabasePath(Book.DB_FILENAME).getPath(), 
-    			null, SQLiteDatabase.OPEN_READONLY);
+    			null, SQLiteDatabase.OPEN_READWRITE);
 	}
 }
