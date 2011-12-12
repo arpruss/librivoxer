@@ -31,6 +31,8 @@ import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -49,6 +51,7 @@ public class Browser extends Activity {
 	private SQLiteDatabase db;
 	private ListView listView;
 	private Cursor cursor;
+	private boolean onlyInstalled;
 	
 	SharedPreferences options;
 	
@@ -67,6 +70,21 @@ public class Browser extends Activity {
         setContentView(R.layout.main);
 
         listView = (ListView)findViewById(R.id.list); 
+
+        CheckBox cb = (CheckBox)findViewById(R.id.installed);
+        onlyInstalled = options.getBoolean(Options.PREF_ONLY_INSTALLED, false);
+        cb.setChecked(onlyInstalled);
+        cb.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
+
+			@Override
+			public void onCheckedChanged(CompoundButton button, boolean value) {
+				onlyInstalled = value;
+				SharedPreferences.Editor ed = options.edit();
+				ed.putBoolean(Options.PREF_ONLY_INSTALLED, value);
+				ed.commit();
+				populateList();
+			}});
+    	
         
         createDBFromSplit();
 //        createDBFromXML();
@@ -382,19 +400,19 @@ public class Browser extends Activity {
 			switch(currentList) {
 			case 1: 
 				if (selectedItem[0].equals(AUTHORS)) {
-					return Book.queryAuthors(db);
+					return Book.queryAuthors(db, onlyInstalled);
 				}
 				else if (selectedItem[0].equals(ALL)) { 
-					return Book.queryAll(db);
+					return Book.queryAll(db, onlyInstalled);
 				}
 				else
 					return null;
 			case 2:
 				if (selectedItem[0].equals(GENRES)) {
-					return Book.queryGenre(db, selectedItem[1]);
+					return Book.queryGenre(db, selectedItem[1], onlyInstalled);
 				}
 				else if (selectedItem[0].equals(AUTHORS)) {
-					return Book.queryAuthor(db, selectedItem[1]);
+					return Book.queryAuthor(db, selectedItem[1], onlyInstalled);
 				}
 				else
 					return null;

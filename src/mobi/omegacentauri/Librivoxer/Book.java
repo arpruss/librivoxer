@@ -51,7 +51,8 @@ public class Book {
 	public String zipfile = "";
 	public static final String DBID = "_id";
 	public static final String XMLID = "id";
-	public static final String INSTALLED = "installed";	
+	public static final String INSTALLED = "installed";
+	public static final String ONLY_INSTALLED = INSTALLED + " <> ''";
 	public String installed = "";
 	public int id;
 	public static final String[] standardGenres = {
@@ -111,6 +112,32 @@ public class Book {
 	
 	public Book() {
 		id = -1;
+	}
+	
+	public Book(SQLiteDatabase db, int id) {
+		String query = "SELECT * FROM "+BOOK_TABLE+" WHERE "+DBID+"='"+id+"'";
+		Log.v("Book", query);
+		Cursor cursor = db.rawQuery(query, new String[] {});
+		cursor.moveToFirst();
+		id = cursor.getInt(cursor.getColumnIndex(DBID));
+		author = cursor.getString(cursor.getColumnIndex(AUTHOR));
+		author2 = cursor.getString(cursor.getColumnIndex(AUTHOR2));
+		category = cursor.getString(cursor.getColumnIndex(CATEGORY));
+		completed = cursor.getString(cursor.getColumnIndex(COMPLETED));
+		copyrightyear = cursor.getString(cursor.getColumnIndex(COPYRIGHTYEAR));
+		description = cursor.getString(cursor.getColumnIndex(DESCRIPTION));
+		etext = cursor.getString(cursor.getColumnIndex(ETEXT));
+		for (int i=0; i<MAX_GENRES; i++)
+			genres[i] = cursor.getString(cursor.getColumnIndex(DBGENRE_PREFIX+i));
+		language = cursor.getString(cursor.getColumnIndex(LANGUAGE));
+		rssurl = cursor.getString(cursor.getColumnIndex(RSSURL));
+		title = cursor.getString(cursor.getColumnIndex(TITLE));
+		totaltime = cursor.getString(cursor.getColumnIndex(TOTALTIME));
+		translator = cursor.getString(cursor.getColumnIndex(TRANSLATOR));
+		zipfile = cursor.getString(cursor.getColumnIndex(ZIPFILE));
+		Log.v("Book", ""+cursor.getColumnIndex(INSTALLED));
+		installed = cursor.getString(cursor.getColumnIndex(INSTALLED));
+		cursor.close();
 	}
 	
 	public boolean existsInDB(SQLiteDatabase db) {
@@ -224,45 +251,39 @@ public class Book {
 		return cols;
 	}
 	
-	public static Cursor queryAuthors(SQLiteDatabase db) {
+	public static Cursor queryAuthors(SQLiteDatabase db, boolean onlyInstalled) {
 		String query = "SELECT "+AUTHOR+" FROM "+BOOK_TABLE+ 
-		" UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>''";
+		   (onlyInstalled ? " WHERE "+ONLY_INSTALLED : "") +
+		" UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>''"+
+		   (onlyInstalled ? " AND "+ONLY_INSTALLED : "");
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 
-	public static Cursor queryGenre(SQLiteDatabase db, String string) {
+	public static Cursor queryGenre(SQLiteDatabase db, String string, boolean onlyInstalled) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
 		   " WHERE "+DatabaseUtils.sqlEscapeString(abbreviateGenre(string))+
-		   " IN ("+getGenreColumns()+") ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
+		   " IN ("+getGenreColumns()+") "+
+		   (onlyInstalled ? "AND "+ONLY_INSTALLED : "") +
+		   "ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 
-	public static Cursor queryAuthor(SQLiteDatabase db, String string) {
+	public static Cursor queryAuthor(SQLiteDatabase db, String string, boolean onlyInstalled) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
-		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+ 
-		   " IN ("+AUTHOR+","+AUTHOR2+") ORDER BY "+TITLE;
+		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+
+		   " IN ("+AUTHOR+","+AUTHOR2+") "+
+		   (onlyInstalled ? "AND "+ONLY_INSTALLED+" " : "") +
+		   "ORDER BY "+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 	
-	public static Map<String,String> loadEntry(SQLiteDatabase db, int id) {
-		String query = "SELECT * FROM "+BOOK_TABLE+" WHERE "+DBID+"='"+id+"'";
-		Log.v("Book", query);
-		Cursor cursor = db.rawQuery(query, new String[] {});
-		cursor.moveToFirst();
-		int cols = cursor.getColumnCount();
-		HashMap<String,String> map = new HashMap<String,String>();
-		for (int i=0; i<cols; i++) {
-			map.put(cursor.getColumnName(i), cursor.getString(i));
-		}
-		cursor.close();
-		return map;
-	}
-	
-	public static Cursor queryAll(SQLiteDatabase db) {
-		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE + " ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
+	public static Cursor queryAll(SQLiteDatabase db, boolean onlyInstalled) {
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE +
+		(onlyInstalled ? " WHERE "+ONLY_INSTALLED: "") +
+		" ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
@@ -270,5 +291,44 @@ public class Book {
 	public static SQLiteDatabase getDB(Context context) {
 		return SQLiteDatabase.openDatabase(context.getDatabasePath(Book.DB_FILENAME).getPath(), 
     			null, SQLiteDatabase.OPEN_READWRITE);
+	}
+
+	public String friendlyGenre(String string) {
+		try {
+			int i = Integer.parseInt(string);
+			return standardGenres[i];
+		}
+		catch(NumberFormatException e) {
+			return string;
+		}
+	}
+
+	public String getInfo() {
+		String authors = author;
+		if (author2.length()>0) {
+			authors += " &amp; "+author2;
+		}
+		String info = "<b>"+authors+"</b><br/><i>"+title+"</i><br/>";
+		if (copyrightyear.length()>0) 
+			info += copyrightyear+"<br/>";
+		if (language.length()>0)
+			info += language+"<br/>";
+		if (translator.length()>0) 
+			info += "Translated by "+translator+"<br/>";
+		if (totaltime.length()>0)
+			info += "Length: "+totaltime+"<br/>";
+		for (int i=0; i<MAX_GENRES; i++) {
+			if (genres[i].length()>0) {
+				if (i!=0)
+					info +=", ";
+				info += friendlyGenre(genres[i]);				
+			}
+		}
+		info += "<br/>";
+		if (etext.length()>0)
+			info += "<a href='"+etext+"'>"+etext+"</a><br/>";
+		info += "<br/>";
+		info += "<br/>"+description;
+		return info;
 	}
 }

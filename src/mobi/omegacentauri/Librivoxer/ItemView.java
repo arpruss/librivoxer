@@ -21,16 +21,19 @@ import org.xml.sax.SAXException;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -39,8 +42,8 @@ import android.widget.Toast;
 
 public class ItemView extends Activity {
 	SQLiteDatabase db;
-	Map<String,String> data;
 	SharedPreferences options;
+	Book book;
 	int id;
 	static public final String PARTIAL = "PARTIAL:";
 	static public final String FULL = "FULL:";
@@ -64,11 +67,12 @@ public class ItemView extends Activity {
         setContentView(R.layout.item);
         
     	db = Book.getDB(this);
-        data = Book.loadEntry(db, id); 
+        book = new Book(db, id); 
     	db.close();
     	
     	TextView info = (TextView)findViewById(R.id.info);
-    	info.setText(Html.fromHtml(getInfo()));
+    	info.setText(Html.fromHtml(book.getInfo()));
+    	info.setMovementMethod(LinkMovementMethod.getInstance());
 	}
 	
 	@Override 
@@ -87,13 +91,13 @@ public class ItemView extends Activity {
 		play = (Button)findViewById(R.id.play);
 		delete = (Button)findViewById(R.id.delete);
 		
-		if (data.get(Book.INSTALLED).startsWith(FULL)) {
+		if (book.installed.startsWith(FULL)) {
 			Log.v("Book", "full");
 			download.setVisibility(View.INVISIBLE);
 			play.setVisibility(View.VISIBLE);
 			delete.setVisibility(View.VISIBLE);
 		}
-		else if (data.get(Book.INSTALLED).startsWith(PARTIAL)) {
+		else if (book.installed.startsWith(PARTIAL)) {
 			Log.v("Book", "partial");
 			download.setText("Continue download");
 			download.setVisibility(View.VISIBLE);
@@ -110,16 +114,6 @@ public class ItemView extends Activity {
 	}
 		
 	
-	private String getInfo() {
-		String author = data.get(Book.AUTHOR);
-		String author2 = data.get(Book.AUTHOR2);
-		if (author2.length()>0) {
-			author += " &amp; "+author2;
-		}
-		return "<b>"+author+"</b>, <i>"+data.get(Book.TITLE)+"</i><br/>" +
-		data.get(Book.DESCRIPTION);
-	}
-	
 	public void setInstalled(String inst) {
     	db = Book.getDB(this);
     	String query = "UPDATE "+Book.BOOK_TABLE+" SET "+Book.INSTALLED+"="+
@@ -127,7 +121,7 @@ public class ItemView extends Activity {
     	Log.v("Book", query);
     	db.execSQL(query);
     	db.close();
-		data.put(Book.INSTALLED, inst);
+		book.installed = inst;
 		Log.v("Book", inst);
 	}
 
@@ -136,17 +130,23 @@ public class ItemView extends Activity {
 	}
 	
 	public void deleteClick(View v) {
-		String inst = data.get(Book.INSTALLED);
-		int index = inst.indexOf(":");
+		int index = book.installed.indexOf(":");
 		if (index < 0)
 			return;
-		deleteDir(inst.substring(index+1));
+		deleteDir(book.installed.substring(index+1));
 		setInstalled("");
 		setButtons();
 	}
 	
 	public void playClick(View v) {
-		Toast.makeText(ItemView.this, "Not yet implemented", 3000).show();
+		String dir = book.installed.replaceAll("^[^:]+:", "");
+		File f = new File(dir + "/" + M3U);
+		Intent intent = new Intent();
+		intent.setAction(Intent.ACTION_VIEW);
+		intent.setDataAndType(Uri.fromFile(f), "audio/*");
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		startActivity(intent);
+//		Toast.makeText(ItemView.this, "Not yet implemented", 3000).show();
 	}
         
     public class DownloadTask extends AsyncTask<Void, Integer, String> {
@@ -165,7 +165,7 @@ public class ItemView extends Activity {
 				public void onCancel(DialogInterface arg0) {
 					DownloadTask.this.cancel(true);					
 				}});
-    		progress.setMessage("Downloading "+data.get(Book.TITLE));
+    		progress.setMessage("Downloading "+book.title);
     		progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     		progress.setIndeterminate(true);
     		progress.show();
@@ -186,7 +186,7 @@ public class ItemView extends Activity {
 				boolean oggRSS = false;
 				URL url;
 				
-				String rssURL = data.get(Book.RSSURL);
+				String rssURL = book.rssurl;
 				if (rssURL.length() == 0) {
 					rssURL = "http://librivox.org/rss/"+id;
 				}
