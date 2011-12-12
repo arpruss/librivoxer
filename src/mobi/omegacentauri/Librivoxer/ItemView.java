@@ -1,10 +1,12 @@
 package mobi.omegacentauri.Librivoxer;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -42,6 +44,7 @@ public class ItemView extends Activity {
 	int id;
 	static public final String PARTIAL = "PARTIAL:";
 	static public final String FULL = "FULL:";
+	static public final String M3U = "book.m3u";
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -217,9 +220,17 @@ public class ItemView extends Activity {
 					String filename = list.get(i).getPath().replaceAll(".*/", "");
 					String path = dir+"/"+filename;
 					download(list.get(i), path);
-					did.add(path);
+					did.add(filename);
 					publishProgress(2+i, list.size()+1);
 				}
+				
+				File m3u = new File(dir+"/"+M3U);
+				OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(m3u));
+				for (String s: did) {
+					writer.write(s);
+					writer.write("\r\n");
+				}
+				writer.close();
 
 				setInstalled(FULL+dir);
 				return dir;
