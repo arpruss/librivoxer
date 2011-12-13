@@ -130,11 +130,11 @@ public class Browser extends Activity {
 				setArrayList(Book.standardGenres); // TODO: allow extensions
 			}
 			else {
-				new PopulateListTask().execute();
+				new PopulateListTask(false).execute();
 			}
 			break;
 		case 2:
-			new PopulateListTask().execute();
+			new PopulateListTask(false).execute();
 			break;
 		}
 	}
@@ -340,9 +340,12 @@ public class Browser extends Activity {
     	ProgressDialog progress;
     	static final int UPDATING = 0;
     	static final int SEARCHING = 1;
+    	private boolean ignoreError;
+    	private boolean forceUpdate;
     	int updated = 0;
     	
-    	public PopulateListTask() {
+    	public PopulateListTask(boolean forceUpdate) {
+    		this.forceUpdate = forceUpdate;
     	}
     	
     	@Override
@@ -350,6 +353,7 @@ public class Browser extends Activity {
     		progress = new ProgressDialog(Browser.this);
     		progress.setCancelable(false);
     		progress.show();
+    		ignoreError = false;
     	}
 
     	protected void onProgressUpdate(Integer... p) {
@@ -361,12 +365,14 @@ public class Browser extends Activity {
     	
     	
     	void updateDB() {
-    		if (System.currentTimeMillis() < 7l * 86400l * 1000l + 
-    				options.getLong(Options.PREF_UPDATE_SUCCEEDED, 0))
-    			return;
-    		if (System.currentTimeMillis() < 2l * 3600l * 1000l + 
-    				options.getLong(Options.PREF_UPDATE_TRIED, 0))
-    			return;
+    		if (!forceUpdate) {
+	    		if (System.currentTimeMillis() < 7l * 86400l * 1000l + 
+	    				options.getLong(Options.PREF_UPDATE_SUCCEEDED, 0))
+	    			return;
+	    		if (System.currentTimeMillis() < 2l * 3600l * 1000l + 
+	    				options.getLong(Options.PREF_UPDATE_TRIED, 0))
+	    			return;
+    		}
     		
     		publishProgress(UPDATING);
 
@@ -416,8 +422,10 @@ public class Browser extends Activity {
 				else if (selectedItem[0].equals(ALL)) { 
 					return Book.queryAll(db, onlyInstalled);
 				}
-				else
+				else {
+					ignoreError = true;
 					return null;
+				}
 			case 2:
 				if (selectedItem[0].equals(GENRES)) {
 					return Book.queryGenre(db, selectedItem[1], onlyInstalled);
@@ -425,9 +433,12 @@ public class Browser extends Activity {
 				else if (selectedItem[0].equals(AUTHORS)) {
 					return Book.queryAuthor(db, selectedItem[1], onlyInstalled);
 				}
-				else
+				else {
+					ignoreError = true;
 					return null;
+				}
 			}
+			ignoreError = true;
 			return null;
 		}
 		
@@ -444,9 +455,11 @@ public class Browser extends Activity {
 			}
 			
 			if (cursor == null) {
-				Toast.makeText(Browser.this, "Error searching", 3000).show();
-				currentList = 0;
-				populateList();
+				if (!ignoreError) {
+					Toast.makeText(Browser.this, "Error searching", 3000).show();
+					currentList = 0;
+					populateList();
+				}
 			}
 			else {
 				Log.v("Book", "cl="+currentList+" si="+selectedItem[0]);
@@ -508,6 +521,9 @@ public class Browser extends Activity {
 	
 	public boolean onOptionsItemSelected(MenuItem item) {
     	switch(item.getItemId()) {
+    	case R.id.update:
+			new PopulateListTask(true).execute();
+			return true;
     	case R.id.license:
     		license();
     		return true;
