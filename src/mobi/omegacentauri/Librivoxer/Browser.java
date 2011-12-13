@@ -93,6 +93,7 @@ public class Browser extends Activity {
         
         createDBFromSplit();
 //        createDBFromXML();
+        Log.v("Book", "-onCreate");
     }
 	
 	@Override
@@ -504,6 +505,9 @@ public class Browser extends Activity {
     	case R.id.license:
     		license();
     		return true;
+    	case R.id.options:
+			startActivity(new Intent(this, Options.class));			
+			return true;
     	}
     	return false;
     	

@@ -1,8 +1,14 @@
 package mobi.omegacentauri.Librivoxer;
 
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.res.Resources;
+import android.os.Bundle;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 
-public class Options extends PreferenceActivity {
+public class Options extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	public static final String PREF_CURRENT_LIST = "currentList";
 	public static final String PREF_SELECTED_ITEM_PREFIX = "selectedItem";
 	public static final String PREF_FORMAT = "format";
@@ -12,4 +18,75 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_UPDATE_TRIED = "updateTried";
 	public static final String PREF_UPDATE_SUCCEEDED = "updateSucceeded";
 	public static final String PREF_ONLY_INSTALLED = "onlyInstalled";
+	
+	private static String[] summaryKeys = { PREF_FORMAT }; 
+	private static int[] summaryEntryValues = { R.array.formats };
+	private static int[] summaryEntryLabels = { R.array.format_labels };
+	private static String[] summaryDefaults = { OPT_OGG };
+
+public static String getString(SharedPreferences options, String key) {
+	for (int i=0; i<summaryKeys.length; i++)
+		if (summaryKeys[i].equals(key)) 
+			return options.getString(key, summaryDefaults[i]);
+	
+	return options.getString(key, "");
+}
+
+@Override
+public void onCreate(Bundle icicle) {
+	super.onCreate(icicle);
+
+	addPreferencesFromResource(R.xml.options);
+}
+
+@Override
+public void onResume() {
+	super.onResume();
+
+	getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+	setSummaries();
+}
+
+public void setSummaries() {
+	for (int i=0; i<summaryKeys.length; i++) {
+		setSummary(i);
+	}
+}
+
+public void setSummary(String key) {		
+	for (int i=0; i<summaryKeys.length; i++) {
+		if (summaryKeys[i].equals(key)) {
+			setSummary(i);
+			return;
+		}
+	}
+}
+
+public void setSummary(int i) {
+	SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+	Resources res = getResources();
+	
+	Preference pref = findPreference(summaryKeys[i]);
+	String value = options.getString(summaryKeys[i], summaryDefaults[i]);
+	
+	String[] valueArray = res.getStringArray(summaryEntryValues[i]);
+	String[] entryArray = res.getStringArray(summaryEntryLabels[i]);
+	
+	for (int j=0; j<valueArray.length; j++) 
+		if (valueArray[j].equals(value)) {
+			pref.setSummary(entryArray[j]);
+			return;
+		}
+}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
+	}
+
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences options, String key) {
+		setSummary(key);
+	}
 }

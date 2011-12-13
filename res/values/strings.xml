@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, Browser!</string>
     <string name="app_name">LibriVox Downloader</string>
+     <string-array name="format_labels">
+        <item>mp3</item>
+        <item>Ogg Vorbis</item>
+        </string-array>
+     <string-array name="formats">
+        <item>mp3</item>
+        <item>ogg</item>
+        </string-array>
 </resources>
