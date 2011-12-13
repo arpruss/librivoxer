@@ -11,10 +11,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
@@ -23,9 +25,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.Html;
 import android.text.SpannableString;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
@@ -250,7 +255,7 @@ public class Browser extends Activity {
 
 
     private void createDBFromSplit() {
-    	File dbFile = getDatabasePath(Book.DB_FILENAME);
+    	File dbFile = new File(Book.getDBPath(this)); 
     	if (dbFile.exists() && dbFile.length() > 2000000)
     		return;
 
@@ -304,12 +309,11 @@ public class Browser extends Activity {
     }
     
     private void createDBFromXML() {
-    	File dbFile = getDatabasePath(Book.DB_FILENAME);
+    	File dbFile = new File(Book.getDBPath(this));
     	if (dbFile.exists())
     		dbFile.delete();
 
-    	SQLiteDatabase db = openOrCreateDatabase(Book.DB_FILENAME,
-    			SQLiteDatabase.CREATE_IF_NECESSARY, null);
+    	db = Book.getDB(this);
     	Book.createTable(db);
     	boolean done = false;
     	for (int i=1; i<100 & !done; i++ ) {
@@ -458,5 +462,50 @@ public class Browser extends Activity {
 			cursor.moveToNext();
 		}
 		return s;
+    }
+
+	private void fatalError(String title, String msg) {
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		Log.e("Lunar", "fatal: "+title);
+
+		alertDialog.setTitle(title);
+		alertDialog.setMessage(msg);
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {finish();} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {finish();} });
+		alertDialog.show();		
+	}
+
+	
+	private void license() {
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		alertDialog.setTitle("License");
+		alertDialog.setMessage(Html.fromHtml(Utils.getAssetString(getAssets(), "licenses.txt")));
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {finish();} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {finish();} });
+		alertDialog.show();		
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+	
+	public boolean onOptionsItemSelected(MenuItem item) {
+    	switch(item.getItemId()) {
+    	case R.id.license:
+    		license();
+    		return true;
+    	}
+    	return false;
+    	
     }
 }

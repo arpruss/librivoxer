@@ -1,5 +1,6 @@
 package mobi.omegacentauri.Librivoxer;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +17,7 @@ public class Book {
 	
 	public static final String[] emptyStringArray = {};
 	
-	public static final String DB_FILENAME = "books.db";
+	private static final String DB_FILENAME = "books.db";
 	
 	public static final String BOOK_TABLE = "tbl_books";
 	public static final String TITLE = "title";
@@ -289,7 +290,7 @@ public class Book {
 	}
 
 	public static SQLiteDatabase getDB(Context context) {
-		return SQLiteDatabase.openDatabase(context.getDatabasePath(Book.DB_FILENAME).getPath(), 
+		return SQLiteDatabase.openDatabase(getDBPath(context), 
     			null, SQLiteDatabase.OPEN_READWRITE);
 	}
 
@@ -330,5 +331,9 @@ public class Book {
 		info += "<br/>";
 		info += "<br/>"+description;
 		return info;
+	}
+
+	public static String getDBPath(Context context) {
+		return ExternalStorage.getSDCacheDir(context, "databases")+"/"+DB_FILENAME;
 	}
 }
