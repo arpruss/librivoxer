@@ -57,6 +57,7 @@ public class Browser extends Activity {
 	private ListView listView;
 	private Cursor cursor;
 	private boolean onlyInstalled;
+	private String[] curItems;
 	
 	SharedPreferences options;
 	
@@ -64,6 +65,7 @@ public class Browser extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        curItems = null;
         selectedItem = new String[NUM_LISTS];
         options = PreferenceManager.getDefaultSharedPreferences(this);
         
@@ -166,6 +168,8 @@ public class Browser extends Activity {
 		final int author2;
 		final int title;
 		
+		curItems = null;
+		
 		author = cursor.getColumnIndex(Book.AUTHOR);
 		author2 = cursor.getColumnIndex(Book.AUTHOR2);
 		title = cursor.getColumnIndex(Book.TITLE);
@@ -210,6 +214,8 @@ public class Browser extends Activity {
 
 	private void setArrayList(final String[] list) {
 		Log.v("Book", "Set array list "+list.length);
+		curItems = list;
+		
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position,
@@ -314,7 +320,7 @@ public class Browser extends Activity {
     	if (dbFile.exists())
     		dbFile.delete();
 
-    	db = Book.getDB(this);
+    	db = Book.getDB(this, true);
     	Book.createTable(db);
     	boolean done = false;
     	for (int i=1; i<100 & !done; i++ ) {

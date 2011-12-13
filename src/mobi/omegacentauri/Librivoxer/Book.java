@@ -177,23 +177,23 @@ public class Book {
 	public static void createTable(SQLiteDatabase db) {
 		String create = "CREATE TABLE "+BOOK_TABLE+" ("+
 				Book.DBID+" INTEGER PRIMARY KEY,"+
-				Book.AUTHOR+" TEXT,"+
-				Book.AUTHOR2+" TEXT,"+
-				Book.CATEGORY+" TEXT,"+
+				Book.AUTHOR+" TEXT COLLATE NOCASE,"+
+				Book.AUTHOR2+" TEXT COLLATE NOCASE,"+
+				Book.CATEGORY+" TEXT COLLATE NOCASE,"+
 				Book.COMPLETED+" TEXT,"+
 				Book.COPYRIGHTYEAR+" TEXT,"+
-				Book.DESCRIPTION+" TEXT,"+
+				Book.DESCRIPTION+" TEXT COLLATE NOCASE,"+
 				Book.ETEXT+" TEXT,";
 		
 		for (int i=0; i<MAX_GENRES; i++)
-			create += (DBGENRE_PREFIX+i)+" TEXT,";
+			create += (DBGENRE_PREFIX+i)+" TEXT COLLATE NOCASE,";
 		
 		create +=
-				Book.LANGUAGE+" TEXT,"+
+				Book.LANGUAGE+" TEXT COLLATE NOCASE,"+
 				Book.RSSURL+" TEXT,"+
-				Book.TITLE+" TEXT,"+
+				Book.TITLE+" TEXT COLLATE NOCASE,"+
 				Book.TOTALTIME+ " TEXT,"+
-				Book.TRANSLATOR+ " TEXT,"+
+				Book.TRANSLATOR+ " TEXT COLLATE NOCASE,"+
 				Book.ZIPFILE+" TEXT,"+
 				Book.INSTALLED+ " TEXT);";
 				
@@ -288,10 +288,17 @@ public class Book {
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
-
+	
 	public static SQLiteDatabase getDB(Context context) {
+		return getDB(context, false);
+	}
+
+	public static SQLiteDatabase getDB(Context context, boolean create) {
+		int attr = SQLiteDatabase.OPEN_READWRITE;
+		if (create)
+			attr |= SQLiteDatabase.CREATE_IF_NECESSARY;
 		return SQLiteDatabase.openDatabase(getDBPath(context), 
-    			null, SQLiteDatabase.OPEN_READWRITE);
+    			null, attr);
 	}
 
 	public String friendlyGenre(String string) {
