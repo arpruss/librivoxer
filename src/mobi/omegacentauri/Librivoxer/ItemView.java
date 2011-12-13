@@ -45,18 +45,22 @@ public class ItemView extends Activity {
 	SharedPreferences options;
 	Book book;
 	int id;
+	boolean active;
 	static public final String PARTIAL = "PARTIAL:";
 	static public final String FULL = "FULL:";
 	static public final String M3U = "book.m3u";
+	DownloadTask downloadTask;
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        downloadTask = null;
+        active = true;
+        
         options = PreferenceManager.getDefaultSharedPreferences(this);
         
-        Log.v("Book", getIntent().toString());
-        id = getIntent().getIntExtra(Book.DBID, -1);
+        id = options.getInt(Options.PREF_ID, -1);
         if (id < 0) {
         	finish();
         	return;
@@ -79,38 +83,58 @@ public class ItemView extends Activity {
 	public void onResume() {
 		super.onResume();
 		
+		active = true;
+		
 		setButtons();
 	}
 	
+	@Override 
+	public void onPause() {
+		super.onPause();
+		
+		active = false;
+	}
+	
+	@Override 
+	public void onStop() {
+		super.onStop();
+		
+		if (downloadTask != null) {
+			downloadTask.cancel(true);
+		}
+	}
+	
 	public void setButtons() {
-		Button download;
-		Button delete;
-		Button play;
-		
-		download = (Button)findViewById(R.id.download);
-		play = (Button)findViewById(R.id.play);
-		delete = (Button)findViewById(R.id.delete);
-		
-		if (book.installed.startsWith(FULL)) {
-			Log.v("Book", "full");
-			download.setVisibility(View.INVISIBLE);
-			play.setVisibility(View.VISIBLE);
-			delete.setVisibility(View.VISIBLE);
+		if(active) {
+			Button download;
+			Button delete;
+			Button play;
+			
+			download = (Button)findViewById(R.id.download);
+			play = (Button)findViewById(R.id.play);
+			delete = (Button)findViewById(R.id.delete);
+			
+			if (book.installed.startsWith(FULL)) {
+				Log.v("Book", "full");
+				download.setVisibility(View.INVISIBLE);
+				play.setVisibility(View.VISIBLE);
+				delete.setVisibility(View.VISIBLE);
+			}
+			else if (book.installed.startsWith(PARTIAL)) {
+				Log.v("Book", "partial");
+				download.setText("Continue download");
+				download.setVisibility(View.VISIBLE);
+				play.setVisibility(View.INVISIBLE);
+				delete.setVisibility(View.VISIBLE);
+			}
+			else {
+				Log.v("Book", "none");
+				download.setText("Download");
+				download.setVisibility(View.VISIBLE);
+				play.setVisibility(View.INVISIBLE);
+				delete.setVisibility(View.INVISIBLE);
+			}
 		}
-		else if (book.installed.startsWith(PARTIAL)) {
-			Log.v("Book", "partial");
-			download.setText("Continue download");
-			download.setVisibility(View.VISIBLE);
-			play.setVisibility(View.INVISIBLE);
-			delete.setVisibility(View.VISIBLE);
-		}
-		else {
-			Log.v("Book", "none");
-			download.setText("Download");
-			download.setVisibility(View.VISIBLE);
-			play.setVisibility(View.INVISIBLE);
-			delete.setVisibility(View.INVISIBLE);
-		}		
 	}
 		
 	
@@ -154,6 +178,12 @@ public class ItemView extends Activity {
     	private static final String CANCEL = "//cancel//";
     	
     	public DownloadTask() {
+    		downloadTask = this;
+    	}
+    	
+    	@Override
+    	protected void onCancelled() {
+    		downloadTask = null;
     	}
     	
     	@Override
@@ -343,6 +373,7 @@ public class ItemView extends Activity {
 				Toast.makeText(ItemView.this, "Error downloading", 3000).show();
 			}
 			setButtons();
+			downloadTask = null;
 		}
     }
     

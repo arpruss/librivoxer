@@ -19,26 +19,34 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.Editable;
 import android.text.Html;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.View.OnKeyListener;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CursorAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -58,6 +66,9 @@ public class Browser extends Activity {
 	private Cursor cursor;
 	private boolean onlyInstalled;
 	private String[] curItems;
+	private EditText searchBox;
+	private Button searchButton;
+	private boolean fastSearch;
 	
 	SharedPreferences options;
 	
@@ -65,6 +76,7 @@ public class Browser extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        fastSearch = false;
         curItems = null;
         selectedItem = new String[NUM_LISTS];
         options = PreferenceManager.getDefaultSharedPreferences(this);
@@ -77,12 +89,40 @@ public class Browser extends Activity {
         setContentView(R.layout.main);
 
         listView = (ListView)findViewById(R.id.list); 
+        searchButton = (Button)findViewById(R.id.search_button);
+        searchButton.setOnClickListener(new Button.OnClickListener(){
+
+			@Override
+			public void onClick(View view) {
+				searchClick(view);				
+			}});
+        searchBox = (EditText)findViewById(R.id.search_box);
+		searchBox.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void afterTextChanged(Editable view) {
+				if (fastSearch) {
+					doFastSearch();
+				}
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1,
+					int arg2, int arg3) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence arg0, int arg1, int arg2,
+					int arg3) {
+			}});
+		
+        
 
         CheckBox cb = (CheckBox)findViewById(R.id.installed);
         onlyInstalled = options.getBoolean(Options.PREF_ONLY_INSTALLED, false);
         cb.setChecked(onlyInstalled);
         cb.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
-
+        	
 			@Override
 			public void onCheckedChanged(CompoundButton button, boolean value) {
 				onlyInstalled = value;
@@ -96,7 +136,14 @@ public class Browser extends Activity {
         createDBFromSplit();
 //        createDBFromXML();
         Log.v("Book", "-onCreate");
+        
+        pleaseBuy(false);
     }
+	
+	boolean inAuthorSearch() {
+		return currentList == 1 && selectedItem[0].equals(AUTHORS);
+	}
+	
 	
 	@Override
 	public void onResume() {
@@ -120,23 +167,80 @@ public class Browser extends Activity {
         db.close();
 	}
 	
+	synchronized void doFastSearch() {
+		String data = searchBox.getText().toString().trim().toLowerCase();
+
+		if(data.length() == 0) {
+			setArrayListNoCurItems(curItems);
+			return;
+		}		
+
+		ArrayList<String> list = new ArrayList<String>();
+		
+		for (String item: curItems) {
+			if (item.toLowerCase().contains(data)) {
+				list.add(item);
+			}
+		}
+		
+		String[] array = new String[list.size()];
+		for (int i=0; i< list.size(); i++)
+			array[i] = list.get(i);
+		setArrayListNoCurItems(array);
+	}
+	
 	synchronized void populateList() {
+    	Log.v("Book", "populating");
+    	
+		fastSearch = false;
+		
+		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+		
 		switch (currentList) {
 		case 0:
+			searchBox.setVisibility(View.VISIBLE);
+			searchButton.setVisibility(View.VISIBLE);
 			setArrayList(topList);
 			break;
 		case 1:
+			Log.v("Book", "Level 1 "+selectedItem[0]);
 			if (selectedItem[0].equals(GENRES)) {
+				searchBox.setVisibility(View.GONE);
+				searchButton.setVisibility(View.GONE);
 				setArrayList(Book.standardGenres); // TODO: allow extensions
 			}
 			else {
+				searchBox.setVisibility(View.VISIBLE);
+				if (selectedItem[0].equals(AUTHORS)) {
+					Log.v("Book", "noSB vis");
+					searchButton.setVisibility(View.GONE);
+					fastSearch = true;
+				}
+				else {
+					searchButton.setVisibility(View.VISIBLE);
+				}
+					
 				new PopulateListTask(false).execute();
 			}
 			break;
 		case 2:
+			searchBox.setVisibility(selectedItem[0].equals(AUTHORS) ? View.GONE : View.VISIBLE );
+			searchButton.setVisibility(selectedItem[0].equals(AUTHORS) ? View.GONE : View.VISIBLE );
 			new PopulateListTask(false).execute();
 			break;
 		}
+		
+		if (searchBox.getVisibility()==View.GONE)
+			getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+	}
+	
+	public void searchClick(View view) {
+		Log.v("Book", "searchClick");
+		if (currentList == 0) {
+			selectedItem[0] = ALL;
+			currentList = 1;
+		}
+		populateList();
 	}
 	
 	private void arrayListSelect(int position) {
@@ -145,15 +249,16 @@ public class Browser extends Activity {
 		selectedItem[currentList] = text;
 		currentList++;
 		populateList();
+		searchBox.setText("");
 	}
 	
 	private void cursorListSelect(int position) {
 		cursor.moveToPosition(position);
-		Intent i = new Intent(this, ItemView.class);
-		int id = cursor.getInt(0);
-		Log.v("Book", "id = "+id);
-		i.putExtra(Book.DBID, id);
-		startActivity(i);
+		SharedPreferences.Editor ed = options.edit();
+		ed.putInt(Options.PREF_ID, cursor.getInt(0));
+		ed.commit();
+		cursor.close();
+		startActivity(new Intent(this, ItemView.class));
 	}
 	
 	private void closeCursor() {
@@ -212,10 +317,17 @@ public class Browser extends Activity {
 			listView.setAdapter(adapter); 
 	}
 
-	private void setArrayList(final String[] list) {
+	private void setArrayList(String[] list) {
 		Log.v("Book", "Set array list "+list.length);
 		curItems = list;
 		
+		if (fastSearch)
+			doFastSearch();
+		else
+			setArrayListNoCurItems(list);
+	}
+	
+	private void setArrayListNoCurItems(final String[] list) {		
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position,
@@ -247,13 +359,20 @@ public class Browser extends Activity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
     	if (event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-    		if (currentList > 0) {
-    			currentList--;
+			if (searchBox.getVisibility() == View.VISIBLE && 
+					searchBox.getText().toString().length() > 0) {
+				searchBox.setText("");
     			populateList();
-    		}
-    		else {
-    			finish();
-    		}
+			}
+			else {
+	    		if (currentList > 0) {
+	    			currentList--;
+	    			populateList();
+	    		}
+	    		else {
+	    			finish();
+	    		}
+			}
 			return true;
     	}
 		return super.dispatchKeyEvent(event);    	
@@ -342,10 +461,16 @@ public class Browser extends Activity {
     	static final int SEARCHING = 1;
     	private boolean ignoreError;
     	private boolean forceUpdate;
+    	private String searchText;
     	int updated = 0;
     	
     	public PopulateListTask(boolean forceUpdate) {
     		this.forceUpdate = forceUpdate;
+    		if (searchBox.getVisibility()==View.VISIBLE &&
+    				searchBox.getText().length()>0)
+    			searchText = searchBox.getText().toString().trim();
+    		else
+    			searchText = null;
     	}
     	
     	@Override
@@ -420,7 +545,7 @@ public class Browser extends Activity {
 					return Book.queryAuthors(db, onlyInstalled);
 				}
 				else if (selectedItem[0].equals(ALL)) { 
-					return Book.queryAll(db, onlyInstalled);
+					return Book.queryAll(db, onlyInstalled, searchText);
 				}
 				else {
 					ignoreError = true;
@@ -428,10 +553,10 @@ public class Browser extends Activity {
 				}
 			case 2:
 				if (selectedItem[0].equals(GENRES)) {
-					return Book.queryGenre(db, selectedItem[1], onlyInstalled);
+					return Book.queryGenre(db, selectedItem[1], onlyInstalled, searchText);
 				}
 				else if (selectedItem[0].equals(AUTHORS)) {
-					return Book.queryAuthor(db, selectedItem[1], onlyInstalled);
+					return Book.queryAuthor(db, selectedItem[1], onlyInstalled, searchText);
 				}
 				else {
 					ignoreError = true;
@@ -521,6 +646,9 @@ public class Browser extends Activity {
 	
 	public boolean onOptionsItemSelected(MenuItem item) {
     	switch(item.getItemId()) {
+    	case R.id.please_buy:
+    		pleaseBuy(true);
+    		return true;
     	case R.id.update:
 			new PopulateListTask(true).execute();
 			return true;
@@ -534,4 +662,53 @@ public class Browser extends Activity {
     	return false;
     	
     }
+	
+	private void pleaseBuy(boolean always) {
+		pleaseBuy(this, always);
+	}
+
+	public static void pleaseBuy(final Context c, boolean always) {
+		if (!always) {
+			SharedPreferences p = c.getSharedPreferences("PleaseBuy", 0);
+			int v;
+			try {
+				v = c.getPackageManager()
+					.getPackageInfo(c.getPackageName(),0).versionCode;
+			} catch (NameNotFoundException e) {
+				v = 0;
+			}
+			if (p.getInt("version", 0) == v) {
+				return;
+			}
+			SharedPreferences.Editor ed = p.edit();
+			ed.putInt("version", v);
+			ed.commit();
+		}
+		
+        AlertDialog alertDialog = new AlertDialog.Builder(c).create();
+
+        alertDialog.setTitle("Other applications?");
+        
+        alertDialog.setMessage("Do you wish to visit the Android Market "+
+        		"to find other applications from Omega Centauri Software?  You will "+
+        		"be able to return to SuperDim with the BACK button.  (You will "+
+        		"only be asked this once when you install a new version, but you "+
+        		"can always come back to this option by pulling up the menu.)");
+        
+        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+        		"See other apps", 
+        	new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+            	Intent i = new Intent(Intent.ACTION_VIEW);
+            	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            	i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+            	c.startActivity(i);
+            } });
+        alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 
+        		"Not now", 
+        	new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {} });
+        alertDialog.show();				
+	}
+
 }

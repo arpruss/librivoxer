@@ -18,6 +18,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String PREF_UPDATE_TRIED = "updateTried";
 	public static final String PREF_UPDATE_SUCCEEDED = "updateSucceeded";
 	public static final String PREF_ONLY_INSTALLED = "onlyInstalled";
+	public static final String PREF_ID = "id";
 	
 	private static String[] summaryKeys = { PREF_FORMAT }; 
 	private static int[] summaryEntryValues = { R.array.formats };

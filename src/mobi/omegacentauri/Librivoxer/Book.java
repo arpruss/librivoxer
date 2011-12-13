@@ -260,31 +260,56 @@ public class Book {
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
+	
+	public static String searchQuery(String searchText) {
+		return AUTHOR + " || '' || " + AUTHOR2 + " || '' || " +
+			TITLE + " || '' LIKE "+DatabaseUtils.sqlEscapeString("%"+searchText+"%") + " ";
+	}
+	
+	public static String searchConjunct(String searchText) {
+		if (searchText != null && searchText.length() > 0)
+			return " AND "+searchQuery(searchText);
+		else
+			return "";
+	}
 
-	public static Cursor queryGenre(SQLiteDatabase db, String string, boolean onlyInstalled) {
+	public static Cursor queryGenre(SQLiteDatabase db, String string, boolean onlyInstalled, String searchText) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
 		   " WHERE "+DatabaseUtils.sqlEscapeString(abbreviateGenre(string))+
 		   " IN ("+getGenreColumns()+") "+
 		   (onlyInstalled ? "AND "+ONLY_INSTALLED : "") +
+		   searchConjunct(searchText) +
 		   "ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 
-	public static Cursor queryAuthor(SQLiteDatabase db, String string, boolean onlyInstalled) {
+	public static Cursor queryAuthor(SQLiteDatabase db, String string, boolean onlyInstalled, String searchText) {
 		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE+
 		   " WHERE " + DatabaseUtils.sqlEscapeString(string)+
 		   " IN ("+AUTHOR+","+AUTHOR2+") "+
 		   (onlyInstalled ? "AND "+ONLY_INSTALLED+" " : "") +
+		   searchConjunct(searchText) +
 		   "ORDER BY "+TITLE;
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 	
-	public static Cursor queryAll(SQLiteDatabase db, boolean onlyInstalled) {
-		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE +
-		(onlyInstalled ? " WHERE "+ONLY_INSTALLED: "") +
-		" ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
+	public static Cursor queryAll(SQLiteDatabase db, boolean onlyInstalled, String searchText) {
+		String query = "SELECT "+QUERY_COLS+" FROM "+BOOK_TABLE;
+		
+		if (onlyInstalled && searchText != null) {
+			query += " WHERE "+ONLY_INSTALLED+searchConjunct(searchText);
+		}
+		else if (onlyInstalled && searchText == null) {
+			query += " WHERE "+ONLY_INSTALLED;
+		}
+		else if (!onlyInstalled && searchText != null) {
+			query += " WHERE "+searchQuery(searchText);
+		}
+		
+		query += " ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;			
+
 		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
