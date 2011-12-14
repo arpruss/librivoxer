@@ -1,5 +1,6 @@
-package mobi.omegacentauri.Librivoxer;
+package mobi.omegacentauri.LibriVoxDownloader;
 
+import mobi.omegacentauri.Librivoxer.R;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Resources;

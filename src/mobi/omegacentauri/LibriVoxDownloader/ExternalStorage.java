@@ -1,4 +1,4 @@
-package mobi.omegacentauri.Librivoxer;
+package mobi.omegacentauri.LibriVoxDownloader;
 
 /**
  * ZipDownloader

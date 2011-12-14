@@ -1,4 +1,4 @@
-package mobi.omegacentauri.Librivoxer;
+package mobi.omegacentauri.LibriVoxDownloader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+
+import mobi.omegacentauri.Librivoxer.R;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
