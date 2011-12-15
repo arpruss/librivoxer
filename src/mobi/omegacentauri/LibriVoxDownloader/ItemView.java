@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import mobi.omegacentauri.Librivoxer.R;
+import mobi.omegacentauri.LibriVoxDownloader.R;
 
 import org.xml.sax.SAXException;
 
@@ -37,6 +37,8 @@ import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -50,7 +52,6 @@ public class ItemView extends Activity {
 	boolean active;
 	static public final String PARTIAL = "PARTIAL:";
 	static public final String FULL = "FULL:";
-	static public final String M3U = "book.m3u";
 	DownloadTask downloadTask;
 
 	@Override
@@ -165,16 +166,45 @@ public class ItemView extends Activity {
 	}
 	
 	public void playClick(View v) {
-		String dir = book.installed.replaceAll("^[^:]+:", "");
-		File f = new File(dir + "/" + M3U);
 		Intent intent = new Intent();
-		intent.setAction(Intent.ACTION_VIEW);
-		intent.setDataAndType(Uri.fromFile(f), "audio/*");
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+		if (Options.getString(options, Options.PREF_PLAY).equals(Options.OPT_PLAYLIST)) {
+			String dir = book.installed.replaceAll("^[^:]+:", "");
+			File f = new File(dir + "/" + dir.replaceAll(".*/", "") + ".m3u");
+			Log.v("Book", "Play "+f.getPath());
+			intent.setAction(Intent.ACTION_VIEW);
+			intent.setDataAndType(Uri.fromFile(f), "audio/*");
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		}
+		else {
+			intent.setAction("android.intent.action.MUSIC_PLAYER");
+		}
 		startActivity(intent);
-//		Toast.makeText(ItemView.this, "Not yet implemented", 3000).show();
 	}
         
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		menu.findItem(R.id.update).setVisible(false);
+		return true;
+	}
+	
+	public boolean onOptionsItemSelected(MenuItem item) {
+    	switch(item.getItemId()) {
+    	case R.id.please_buy:
+    		Browser.pleaseBuy(this, true);
+    		return true;
+    	case R.id.license:
+    		Browser.license(this);
+    		return true;
+    	case R.id.options:
+			startActivity(new Intent(this, Options.class));			
+			return true;
+    	}
+    	return false;
+    	
+    }
+	
     public class DownloadTask extends AsyncTask<Void, Integer, String> {
     	private ProgressDialog progress;
     	private static final String CANCEL = "//cancel//";
@@ -241,22 +271,23 @@ public class ItemView extends Activity {
 					}
 				}
 				
-				String b = parse.getLink().replaceAll("/$","").replaceAll(".*/","");
-				dir = getBookDir(b);
+				String base = parse.getLink().replaceAll("/$","").replaceAll(".*/","");
+				dir = getBookDir(base);
 				
 				cleanDir(dir);
 				
-				publishProgress(1, list.size()+1);
+				publishProgress(0, list.size());
 				
 				for (int i=0; i<list.size(); i++) {
 					String filename = list.get(i).getPath().replaceAll(".*/", "");
 					String path = dir+"/"+filename;
 					download(list.get(i), path);
 					did.add(filename);
-					publishProgress(2+i, list.size()+1);
+					publishProgress(1+i, list.size());
 				}
-				
-				File m3u = new File(dir+"/"+M3U);
+
+				File m3u = new File(dir+"/"+base+".m3u");
+				Log.v("Book", m3u.getPath());
 				OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(m3u));
 				for (String s: did) {
 					writer.write(s);

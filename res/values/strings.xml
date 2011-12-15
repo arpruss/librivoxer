@@ -9,4 +9,12 @@
         <item>mp3</item>
         <item>ogg</item>
         </string-array>
+     <string-array name="play_button_labels">
+        <item>Launch audio player</item>
+        <item>Play playlist</item>
+        </string-array>
+     <string-array name="play_buttons">
+        <item>launch</item>
+        <item>playlist</item>
+        </string-array>
 </resources>

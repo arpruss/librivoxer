@@ -11,7 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
-import mobi.omegacentauri.Librivoxer.R;
+import mobi.omegacentauri.LibriVoxDownloader.R;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -628,15 +628,19 @@ public class Browser extends Activity {
 
 	
 	private void license() {
-		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+		license(this);
+	}
+	
+	public static void license(Context context) {
+		AlertDialog alertDialog = new AlertDialog.Builder(context).create();
 
 		alertDialog.setTitle("License");
-		alertDialog.setMessage(Html.fromHtml(Utils.getAssetString(getAssets(), "licenses.txt")));
+		alertDialog.setMessage(Html.fromHtml(Utils.getAssetString(context.getAssets(), "licenses.txt")));
 		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
 				new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {finish();} });
+			public void onClick(DialogInterface dialog, int which) {} });
 		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-			public void onCancel(DialogInterface dialog) {finish();} });
+			public void onCancel(DialogInterface dialog) {} });
 		alertDialog.show();		
 	}
 
