@@ -13,7 +13,7 @@
                 android:entryValues="@array/play_buttons"
                 android:key="playButton"/>
     <PreferenceScreen
-            android:title="Choose download folder...">
+            android:title="Base download folder...">
         <intent android:action="mobi.omegacentauri.LibriVoxDownloader.FOLDER"/> 
         </PreferenceScreen>
         </PreferenceCategory> 
