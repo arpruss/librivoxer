@@ -88,7 +88,7 @@ public class Browser extends Activity {
         
         currentList = options.getInt(Options.PREF_CURRENT_LIST, 0);
         
-        setContentView(R.layout.main);
+        setContentView(R.layout.browser);
 
         listView = (ListView)findViewById(R.id.list); 
         searchButton = (Button)findViewById(R.id.search_button);

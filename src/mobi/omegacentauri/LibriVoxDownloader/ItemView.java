@@ -208,6 +208,10 @@ public class ItemView extends Activity {
     public class DownloadTask extends AsyncTask<Void, Integer, String> {
     	private ProgressDialog progress;
     	private static final String CANCEL = "//cancel//";
+    	private static final int INFO = 0;
+    	private static final int AUDIO = 1;
+    	private static final int COVER = 2;
+    	private static final int FINALIZING = 3;
     	
     	public DownloadTask() {
     		downloadTask = this;
@@ -234,9 +238,26 @@ public class ItemView extends Activity {
     	}
 
     	protected void onProgressUpdate(Integer... p) {
-    		progress.setIndeterminate(false);
-    		progress.setMax(p[1]);
-    		progress.setProgress(p[0]);
+    		switch(p[0]) {
+    		case INFO:
+    			progress.setIndeterminate(true);
+    			progress.setMessage("Fetching file information...");
+    			break;
+    		case COVER:
+    			progress.setIndeterminate(true);
+    			progress.setMessage("Fetching cover...");
+    			break;
+    		case AUDIO:
+    			progress.setIndeterminate(false);
+        		progress.setMax(p[2]);
+        		progress.setProgress(p[1]);
+        		progress.setMessage("Fetching audio...");
+        		break;
+    		case FINALIZING:
+    			progress.setIndeterminate(true);
+    			progress.setMessage("Finalizing...");
+    			break;
+    		}
     	}
     	
 		@Override
@@ -247,6 +268,8 @@ public class ItemView extends Activity {
 				boolean ogg = options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG);
 				boolean oggRSS = false;
 				URL url;
+				
+				publishProgress(INFO);
 				
 				String rssURL = book.rssurl;
 				if (rssURL.length() == 0) {
@@ -263,28 +286,33 @@ public class ItemView extends Activity {
 				ParseRSS parse = new ParseRSS(url);
 				parse.parse();
 				List<URL> list = parse.getList();
-				
-				if (ogg && (!oggRSS || list.size() == 0)) {
-					list = getOGGList(new URL(parse.getLink()));
-					if (list.size() == 0) {
-						throw(new IOException("Cannot find ogg files"));
-					}
-				}
+				MoreBookData data = new MoreBookData();
+				boolean needOGG = ogg && (!oggRSS || list.size() == 0);				
+				data.get(new URL(parse.getLink()), needOGG);
+				if (needOGG)
+					list = data.urls;
 				
 				String base = parse.getLink().replaceAll("/$","").replaceAll(".*/","");
 				dir = getBookDir(base);
 				
 				cleanDir(dir);
 				
-				publishProgress(0, list.size());
+				publishProgress(AUDIO, 0, list.size());
 				
 				for (int i=0; i<list.size(); i++) {
 					String filename = list.get(i).getPath().replaceAll(".*/", "");
 					String path = dir+"/"+filename;
 					download(list.get(i), path);
 					did.add(filename);
-					publishProgress(1+i, list.size());
+					publishProgress(AUDIO, 1+i, list.size());
 				}
+				
+				if (data.coverJPEG != null) {
+					publishProgress(COVER);
+					download(data.coverJPEG, dir+"/cover.jpg");
+				}
+				
+				publishProgress(FINALIZING);
 
 				File m3u = new File(dir+"/"+base+".m3u");
 				Log.v("Book", m3u.getPath());
@@ -330,27 +358,48 @@ public class ItemView extends Activity {
 				}
 			}
 		}
-
-		private List<URL> getOGGList(URL url) throws IOException {
-			List<URL> list = new ArrayList<URL>();
-			String html = Utils.getStringFromURL(url);
-			Pattern pattern = Pattern.compile("<a\\s+href=['\"]([^'\"]+\\.ogg)['\"]",
-					Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-			Matcher matcher = pattern.matcher(html);
-			int pos = 0;
-			while (matcher.find(pos)) {
-				Log.v("Book", "found:"+matcher.group(1));
-				list.add(new URL(matcher.group(1)));
-				pos = matcher.end();
-			}
-			return list;
-		}
 		
+		public class MoreBookData {
+			List<URL> urls;
+			URL	coverJPEG;
+			
+			public MoreBookData() {
+				coverJPEG = null;
+				urls = new ArrayList<URL>();
+			}
+			
+			public void get(URL url, boolean ogg) throws IOException {
+				String html = Utils.getStringFromURL(url);
+				if (ogg) {
+					Pattern pattern = Pattern.compile("<a\\s+href=['\"]([^'\"]+\\.ogg)['\"]",
+							Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+					Matcher matcher = pattern.matcher(html);
+					int pos = 0;
+					while (matcher.find(pos)) {
+						urls.add(new URL(matcher.group(1)));
+						pos = matcher.end();
+					}
+				}
+				
+				Pattern pattern = Pattern.compile("<a\\s+href=['\"]([^'\"]+CdCover[^'\"]+\\.jpg)['\"]",
+						Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+				Matcher matcher = pattern.matcher(html);
+				if (matcher.find()) {
+					coverJPEG = new URL(matcher.group(1));
+				}
+				else {
+					coverJPEG = null;
+				}				
+			}
+		}
+
 		private String getBookDir(String b) {
-			String dir = Environment.getExternalStorageDirectory() + "/" + "Librivox";
-			(new File(dir)).mkdir();
-			dir += "/" + b;
-			(new File(dir)).mkdir();
+			String dir = 
+				options.getString(Options.PREF_FOLDER, 
+						Environment.getExternalStorageDirectory() + "/" + "LibriVox");
+//			(new File(dir)).mkdirs();
+//			dir += "/" + b;
+			(new File(dir)).mkdirs();
 			Log.v("Book", "dir:"+dir);
 			return dir;
 		}
@@ -359,6 +408,8 @@ public class ItemView extends Activity {
 			File tmpFile = null;
 			InputStream in = null;
 			OutputStream out = null;
+			
+			Log.v("Book", ""+url+" -> "+path);
 			
 			try {
 				final int bufferSize = 16384;

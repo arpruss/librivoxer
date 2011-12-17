@@ -13,7 +13,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String PREF_CURRENT_LIST = "currentList";
 	public static final String PREF_SELECTED_ITEM_PREFIX = "selectedItem";
 	public static final String PREF_FORMAT = "format";
-	public static final String PREF_BASE = "Librivox";
+//	public static final String PREF_BASE = "Librivox";
 	public static final String OPT_OGG = "ogg";
 	public static final String OPT_MP3 = "mp3";
 	public static final String PREF_UPDATE_TRIED = "updateTried";
@@ -23,6 +23,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String OPT_PLAYLIST = "playlist";
 	public static final String OPT_LAUNCH = "launch";
 	public static final String PREF_ID = "id";
+	public static final String PREF_FOLDER = "lvFolder";
 	
 	private static String[] summaryKeys = { PREF_FORMAT, PREF_PLAY }; 
 	private static int[] summaryEntryValues = { R.array.formats, R.array.play_buttons };
