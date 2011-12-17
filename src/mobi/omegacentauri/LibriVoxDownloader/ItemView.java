@@ -396,9 +396,9 @@ public class ItemView extends Activity {
 		private String getBookDir(String b) {
 			String dir = 
 				options.getString(Options.PREF_FOLDER, 
-						Environment.getExternalStorageDirectory() + "/" + "LibriVox");
+						Options.defaultFolder());
 //			(new File(dir)).mkdirs();
-//			dir += "/" + b;
+			dir += "/" + b;
 			(new File(dir)).mkdirs();
 			Log.v("Book", "dir:"+dir);
 			return dir;

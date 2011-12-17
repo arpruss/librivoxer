@@ -3,17 +3,24 @@ package mobi.omegacentauri.LibriVoxDownloader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.SpannableString;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -23,6 +30,7 @@ import android.widget.Toast;
 public class FolderChooser extends ListActivity {
     private SharedPreferences options;
     private File currentFolder;
+	private File parentFolder;
     
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -32,7 +40,7 @@ public class FolderChooser extends ListActivity {
         options = PreferenceManager.getDefaultSharedPreferences(this);
         
         currentFolder = new File(options.getString(Options.PREF_FOLDER,
-        		Environment.getExternalStorageDirectory() + "/" + "LibriVox"));
+        		Options.defaultFolder()));
         currentFolder.mkdirs();
 	}
     
@@ -47,26 +55,50 @@ public class FolderChooser extends ListActivity {
     	return currentFolder.listFiles(new FileFilter(){
 			@Override
 			public boolean accept(File f) {
-				return f.isDirectory() && f.canRead() &&
-				    ! f.getName().equals(".");
+				return f.isDirectory() && f.canRead();
 			}
     	});
     }
     
     private void scanFolder() {
-    	File[] contents = getFolder();
-    	if (contents.length == 0) {
-			Toast.makeText(this, "Invalid folder, switching", 2000).show();
-			currentFolder = new File(Environment.getExternalStorageDirectory() + "/" + "LibriVox");
-			currentFolder.mkdirs();
-			contents = getFolder();
+    	if (!currentFolder.canRead()) {
+    		Toast.makeText(this, "Invalid folder", 2000).show();
+    		currentFolder = new File(Environment.getExternalStorageDirectory() + "/" + "LibriVox");
+    		currentFolder.mkdirs();
     	}
     	
-    	final File[] files = contents;
+    	File[] contents = getFolder();
+    	 
+    	final ArrayList<File> files = new ArrayList<File>();
+    	for (File f: contents)
+    		files.add(f);
+    	String parentPath = currentFolder.getParent();
+    	if (parentPath != null) {
+    		parentFolder = new File(parentPath);
+    		files.add(parentFolder);
+    	}
+    	else {
+    		parentFolder = null;
+    	}
     	
+    	Comparator<File> comp = new Comparator<File>(){
+
+			@Override
+			public int compare(File f1, File f2) {
+				if (f1.equals(f2))
+					return 0;
+				if (f1.equals(parentFolder))
+					return -1;
+				else if (f2.equals(parentFolder))
+					return 1;
+				else 
+					return f1.getName().compareToIgnoreCase(f2.getName());
+			}};
+    	Collections.sort(files, comp);
+    	    	
     	ListAdapter adapter = new ArrayAdapter<File>(this, 
     			android.R.layout.simple_list_item_1,
-    			contents) {
+    			files) {
     		@Override
     		public View getView(int position, View convertView, ViewGroup parent) {
     			View v;				
@@ -78,24 +110,22 @@ public class FolderChooser extends ListActivity {
     				v = convertView;
     			}
 
-    			if (files[position].getName().equals("..")) 
-    				((TextView)v.findViewById(R.id.text1))
+    			if (files.get(position).equals(parentFolder)) {    				
+    				((TextView)v.findViewById(R.id.text1)) 
     				.setText(Html.fromHtml("<em>[up]</em>"));
-    			else
+    			}
+    			else {
     				((TextView)v.findViewById(R.id.text1))
-    				.setText(files[position].getName());
+    				.setText(files.get(position).getName());
+    			}
     			return v;
     		}
     	};
     	
     	setListAdapter(adapter);
     	
-    	try {
-			((TextView)findViewById(R.id.current_folder)).setText( 
-					currentFolder.getCanonicalPath());
-		} catch (IOException e) {
-			((TextView)findViewById(R.id.current_folder)).setText("");
-		}
+		((TextView)findViewById(R.id.current_folder)).setText( 
+				currentFolder.getPath());
     }
     
     @Override
@@ -105,10 +135,55 @@ public class FolderChooser extends ListActivity {
     }
     
     public void chooseClick(View v) {
-    	
+    	SharedPreferences.Editor ed = options.edit();
+    	ed.putString(Options.PREF_FOLDER, currentFolder.getPath());
+    	ed.commit();
+    	finish();
+    }
+    
+    public void defaultClick(View v) {
+    	currentFolder = new File(Options.defaultFolder());
+    	currentFolder.mkdirs();
+    	SharedPreferences.Editor ed = options.edit();
+    	ed.putString(Options.PREF_FOLDER, currentFolder.getPath());
+    	ed.commit();
+    	scanFolder();
     }
     
     public void createClick(View v) {
-    	
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        
+        alertDialog.setTitle("Create new folder");
+        alertDialog.setMessage("Name of new folder:");
+        final EditText input = new EditText(this);
+        alertDialog.setView(input);
+        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+        		"OK", 
+        		new DialogInterface.OnClickListener() {
+        	public void onClick(DialogInterface dialog, int which) {
+        		if(!createFolder(input.getText().toString().trim())) {
+        			Toast.makeText(FolderChooser.this, "Invalid folder name", 2000).show();
+        		}
+        	}
+        });
+        alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+        	public void onCancel(DialogInterface dialog) {} });
+        alertDialog.show();		
+    }
+    
+    private boolean createFolder(String s) {
+    	String p;
+    	p = currentFolder.getPath();
+    	File d;
+    	if (p.endsWith("/"))
+    		d = new File(p+s);
+    	else
+    		d = new File(p+"/"+s);
+    	if (! d.mkdir()) {
+    		return false;
+    	}
+    	currentFolder = d;
+    	scanFolder();
+    	return true;    	
     }
 }

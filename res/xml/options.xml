@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+  <PreferenceCategory android:title="LibriVox Downloader">
+   <ListPreference android:title="Preferred format"
+                android:defaultValue="ogg"
+                android:entries="@array/format_labels"
+                android:entryValues="@array/formats"
+                android:key="format"/>
+   <ListPreference android:title="Play button"
+                android:defaultValue="playlist"
+                android:entries="@array/play_button_labels"
+                android:entryValues="@array/play_buttons"
+                android:key="playButton"/>
+    <PreferenceScreen
+            android:title="Choose download folder...">
+        <intent android:action="mobi.omegacentauri.LibriVoxDownloader.FOLDER"/> 
+        </PreferenceScreen>
+        </PreferenceCategory> 
+</PreferenceScreen>

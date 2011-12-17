@@ -20,18 +20,22 @@
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content">
 <Button
-	android:id="@+id/choose_folder"
 	android:layout_weight="1"
 	android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="chooseClick"
-	android:text="Choose this folder" />
+	android:text="Choose this" />
 <Button
-	android:id="@+id/create_folder"
 	android:layout_weight="1"
 	android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="createClick"
-	android:text="Create new folder" />
+	android:text="Create new..." />
+<Button
+	android:layout_weight="1"
+	android:layout_width="0dip"
+	android:layout_height="wrap_content"
+	android:onClick="defaultClick"
+	android:text="Default" />
 </LinearLayout>
 </LinearLayout>

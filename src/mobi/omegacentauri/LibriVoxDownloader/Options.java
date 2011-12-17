@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -29,8 +30,12 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	private static int[] summaryEntryValues = { R.array.formats, R.array.play_buttons };
 	private static int[] summaryEntryLabels = { R.array.format_labels, R.array.play_button_labels };
 	private static String[] summaryDefaults = { OPT_OGG, OPT_PLAYLIST };
+	
+	public static String defaultFolder() {
+		return Environment.getExternalStorageDirectory() + "/" + "LibriVox";
+	}
 
-public static String getString(SharedPreferences options, String key) {
+	public static String getString(SharedPreferences options, String key) {
 	for (int i=0; i<summaryKeys.length; i++)
 		if (summaryKeys[i].equals(key)) 
 			return options.getString(key, summaryDefaults[i]);
