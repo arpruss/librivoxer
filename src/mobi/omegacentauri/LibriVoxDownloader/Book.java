@@ -322,6 +322,7 @@ public class Book {
 		int attr = SQLiteDatabase.OPEN_READWRITE;
 		if (create)
 			attr |= SQLiteDatabase.CREATE_IF_NECESSARY;
+		Log.v("Book", "opening "+getDBPath(context));
 		return SQLiteDatabase.openDatabase(getDBPath(context), 
     			null, attr);
 	}

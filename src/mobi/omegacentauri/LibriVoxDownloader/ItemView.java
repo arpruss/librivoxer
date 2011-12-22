@@ -22,6 +22,7 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -179,7 +180,12 @@ public class ItemView extends Activity {
 		else {
 			intent.setAction("android.intent.action.MUSIC_PLAYER");
 		}
-		startActivity(intent);
+		try {
+			startActivity(intent);
+		}  
+		catch (ActivityNotFoundException e) {
+			Toast.makeText(ItemView.this, "No audio player (get MortPlayer)", 3000).show(); 
+		}
 	}
         
 	@Override
@@ -463,17 +469,24 @@ public class ItemView extends Activity {
     
     static private void deleteDir(String dir) {
     	File dirFile = new File(dir);
-    	for (File f: dirFile.listFiles()) {
-    		f.delete();
-    	}
+    	
+    	if (!dirFile.exists())
+    		return;
+    	
+    	File[] list = dirFile.listFiles();
+    	if (list != null)
+	    	for (File f: list) 
+	    		f.delete();
     	dirFile.delete();
     }
 
     static private void cleanDir(String dir) {
     	File dirFile = new File(dir);
-    	for (File f: dirFile.listFiles()) {
-    		if (f.getPath().endsWith(".download"))
-    			f.delete();
+    	if (dirFile.exists()) {
+	    	for (File f: dirFile.listFiles()) {
+	    		if (f.getPath().endsWith(".download"))
+	    			f.delete();
+	    	}
     	}
     }
 }
