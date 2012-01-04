@@ -25,11 +25,12 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String OPT_LAUNCH = "launch";
 	public static final String PREF_ID = "id";
 	public static final String PREF_FOLDER = "lvFolder";
+	public static final String PREF_RETRIES = "retries";
 	
-	private static String[] summaryKeys = { PREF_FORMAT, PREF_PLAY }; 
-	private static int[] summaryEntryValues = { R.array.formats, R.array.play_buttons };
-	private static int[] summaryEntryLabels = { R.array.format_labels, R.array.play_button_labels };
-	private static String[] summaryDefaults = { OPT_OGG, OPT_PLAYLIST };
+	private static String[] summaryKeys = { PREF_FORMAT, PREF_PLAY, PREF_RETRIES }; 
+	private static int[] summaryEntryValues = { R.array.formats, R.array.play_buttons, R.array.retries };
+	private static int[] summaryEntryLabels = { R.array.format_labels, R.array.play_button_labels, R.array.retries };
+	private static String[] summaryDefaults = { OPT_OGG, OPT_PLAYLIST, "2" };
 	
 	public static String defaultFolder() {
 		return Environment.getExternalStorageDirectory() + "/" + "LibriVox";

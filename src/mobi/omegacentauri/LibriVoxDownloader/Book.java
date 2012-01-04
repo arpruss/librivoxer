@@ -10,6 +10,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 public class Book {
@@ -318,7 +319,7 @@ public class Book {
 		return getDB(context, false);
 	}
 
-	public static SQLiteDatabase getDB(Context context, boolean create) {
+	public static SQLiteDatabase getDB(Context context, boolean create) throws SQLiteException {
 		int attr = SQLiteDatabase.OPEN_READWRITE;
 		if (create)
 			attr |= SQLiteDatabase.CREATE_IF_NECESSARY;

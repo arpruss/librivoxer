@@ -12,6 +12,11 @@
                 android:entries="@array/play_button_labels"
                 android:entryValues="@array/play_buttons"
                 android:key="playButton"/>
+   <ListPreference android:title="Retries when downloading"
+                android:defaultValue="2"
+                android:entries="@array/retries"
+                android:entryValues="@array/retries"
+                android:key="retries"/>
     <PreferenceScreen
             android:title="Base download folder...">
         <intent android:action="mobi.omegacentauri.LibriVoxDownloader.FOLDER"/> 

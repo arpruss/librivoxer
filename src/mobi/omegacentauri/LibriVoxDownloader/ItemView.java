@@ -184,7 +184,7 @@ public class ItemView extends Activity {
 			startActivity(intent);
 		}  
 		catch (ActivityNotFoundException e) {
-			Toast.makeText(ItemView.this, "No audio player (get MortPlayer)", 3000).show(); 
+			Toast.makeText(ItemView.this, "No audio player (get MortPlayer)", 6000).show(); 
 		}
 	}
         
@@ -353,7 +353,6 @@ public class ItemView extends Activity {
 					runOnUiThread(new Runnable(){
 						@Override
 						public void run() {
-							Log.v("Book", "onui");
 							Toast.makeText(ItemView.this, "Canceled", 3000).show(); 
 							setButtons();			
 						}});
@@ -425,21 +424,54 @@ public class ItemView extends Activity {
 					return;
 
 				byte[] buffer = new byte[bufferSize];
-							
-				in = url.openStream();
-				tmpFile = new File(path + ".download");
-				tmpFile.delete();
-				out = new FileOutputStream(tmpFile);
 				
-				int count;
-				
-				while ((count = in.read(buffer, 0, bufferSize)) >= 0) {
-					if (isCancelled()) {
-						Log.v("Book", "throw");
-						throw new IOException(CANCEL); // TODO: be nicer
+				int tryCount = 0;
+				boolean success = false;
+
+				while (!success) {
+					try {
+						in = url.openStream();
+						tmpFile = new File(path + ".download");
+						tmpFile.delete();
+						out = new FileOutputStream(tmpFile);
+		
+						int size = 0;
+						int count;
+						
+						while ((count = in.read(buffer, 0, bufferSize)) >= 0) {
+							size += count;
+							if (isCancelled()) {
+								Log.v("Book", "throw");
+								throw new IOException(CANCEL); // TODO: be nicer
+							}
+							out.write(buffer, 0, count);
+						}
+						
+						Log.v("Book", "download size: "+size);
+						if (size == 0) {
+							throw new IOException("Zero length file");
+						}
+						success = true;
 					}
-					out.write(buffer, 0, count);
+					catch(IOException e) {
+						tryCount++;
+						if (Integer.parseInt(options.getString(Options.PREF_RETRIES, "2")) < tryCount) {
+							throw(e);
+						}
+						else {
+							Log.e("Book", "Error "+e+", retrying");
+							if (out != null) {
+								out.close();
+								out = null;
+							}
+							if (in != null) {
+								in.close();
+								in = null;
+							}
+						}
+					}
 				}
+				
 				out.close();
 				out = null;
 				in.close();
@@ -460,7 +492,7 @@ public class ItemView extends Activity {
 		protected void onPostExecute(String dir) {
 			progress.dismiss();
 			if (dir == null) {
-				Toast.makeText(ItemView.this, "Error downloading", 3000).show();
+				Toast.makeText(ItemView.this, "Error downloading, try later", 6000).show();
 			}
 			setButtons();
 			downloadTask = null;

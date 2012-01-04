@@ -25,6 +25,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -56,6 +57,7 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class Browser extends Activity {
+	private static final String Market = "Market";
 	private static final String ALL = "All";
 	private static final String AUTHORS = "Authors"; 
 	private static final String GENRES = "Genres";
@@ -148,25 +150,36 @@ public class Browser extends Activity {
 	
 	
 	@Override
-	public void onResume() {
-		super.onResume();
+	public void onStart() {
+		super.onStart();
 		
-    	db = Book.getDB(this); 
+		try {
+			db = Book.getDB(this);
+		}
+		catch (SQLiteException e) {
+			Toast.makeText(this, "Cannot open db: contact developer", 5000).show();
+			finish();
+			return;
+		}
     	
     	populateList();		
 	}
 	
 	@Override
-	public void onPause() {
-		super.onPause();
+	public void onStop() {
+		super.onStop();
 		
-		closeCursor(); // TODO: deactivate, not close
-		SharedPreferences.Editor ed = options.edit();
-		ed.putInt(Options.PREF_CURRENT_LIST, currentList);
-        for (int i=0; i < NUM_LISTS; i++)
-        	ed.putString(Options.PREF_SELECTED_ITEM_PREFIX+i, selectedItem[i]);
-        ed.commit();
-        db.close();
+		if (db != null) {
+			closeCursor(); // TODO: deactivate, not close
+			SharedPreferences.Editor ed = options.edit();
+			ed.putInt(Options.PREF_CURRENT_LIST, currentList);
+	        for (int i=0; i < NUM_LISTS; i++)
+	        	ed.putString(Options.PREF_SELECTED_ITEM_PREFIX+i, selectedItem[i]);
+	        ed.commit();
+	        db.close();
+
+	        db = null;
+		}
 	}
 	
 	synchronized void doFastSearch() {
@@ -592,6 +605,8 @@ public class Browser extends Activity {
 				Log.v("Book", "cl="+currentList+" si="+selectedItem[0]);
 				if (currentList == 1 && selectedItem[0].equals(AUTHORS)) {
 					setArrayList(cursorToArray(cursor));
+					cursor.close();
+					closeCursor();
 				}
 				else {
 					setCursorList(cursor);
@@ -695,7 +710,7 @@ public class Browser extends Activity {
 
         alertDialog.setTitle("Other applications?");
         
-        alertDialog.setMessage("Do you wish to visit the Android Market "+
+        alertDialog.setMessage("Do you wish to visit the "+Market+" "+
         		"to find other applications from Omega Centauri Software?  You will "+
         		"be able to return to SuperDim with the BACK button.  (You will "+
         		"only be asked this once when you install a new version, but you "+
@@ -707,7 +722,10 @@ public class Browser extends Activity {
             public void onClick(DialogInterface dialog, int which) {
             	Intent i = new Intent(Intent.ACTION_VIEW);
             	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            	i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+            	if (Market.contains("arket"))
+            		i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+            	else
+            		i.setData(Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=mobi.pruss.force2sd&showAll=1"));            		
             	c.startActivity(i);
             } });
         alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 

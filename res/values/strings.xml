@@ -17,4 +17,10 @@
         <item>launch</item>
         <item>playlist</item>
         </string-array>
+     <string-array name="retries">
+     	<item>0</item>
+     	<item>1</item>
+     	<item>2</item>
+     	<item>3</item>
+     </string-array>
 </resources>

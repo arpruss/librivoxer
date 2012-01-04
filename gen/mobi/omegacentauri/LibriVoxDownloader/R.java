@@ -13,6 +13,7 @@ public final class R {
         public static final int formats=0x7f060001;
         public static final int play_button_labels=0x7f060002;
         public static final int play_buttons=0x7f060003;
+        public static final int retries=0x7f060004;
     }
     public static final class attr {
     }
