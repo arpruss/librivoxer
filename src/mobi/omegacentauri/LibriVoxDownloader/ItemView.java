@@ -10,6 +10,7 @@ import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class ItemView extends Activity {
 	static public final String PARTIAL = "PARTIAL:";
 	static public final String FULL = "FULL:";
 	DownloadTask downloadTask;
+	DecimalFormat format = new DecimalFormat("0.000");
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -218,6 +220,7 @@ public class ItemView extends Activity {
     	private static final int AUDIO = 1;
     	private static final int COVER = 2;
     	private static final int FINALIZING = 3;
+    	private static final int BYTE_COUNT = 4;
     	
     	public DownloadTask() {
     		downloadTask = this;
@@ -257,12 +260,17 @@ public class ItemView extends Activity {
     			progress.setIndeterminate(false);
         		progress.setMax(p[2]);
         		progress.setProgress(p[1]);
-        		progress.setMessage("Fetching audio...");
+        		progress.setMessage("Fetching audio");
         		break;
     		case FINALIZING:
     			progress.setIndeterminate(true);
     			progress.setMessage("Finalizing...");
     			break;
+    		case BYTE_COUNT:
+    			
+    			progress.setMessage(format.format(p[1]/(1024.*1024.))+"mb in chapter");
+    			break;
+    			
     		}
     	}
     	
@@ -308,14 +316,14 @@ public class ItemView extends Activity {
 				for (int i=0; i<list.size(); i++) {
 					String filename = list.get(i).getPath().replaceAll(".*/", "");
 					String path = dir+"/"+filename;
-					download(list.get(i), path);
+					download(list.get(i), path, true);
 					did.add(filename);
 					publishProgress(AUDIO, 1+i, list.size());
 				}
 				
 				if (data.coverJPEG != null) {
 					publishProgress(COVER);
-					download(data.coverJPEG, dir+"/cover.jpg");
+					download(data.coverJPEG, dir+"/cover.jpg", false);
 				}
 				
 				publishProgress(FINALIZING);
@@ -409,7 +417,7 @@ public class ItemView extends Activity {
 			return dir;
 		}
 		
-		private void download(URL url, String path) throws IOException {
+		private void download(URL url, String path, boolean byteCount) throws IOException {
 			File tmpFile = null;
 			InputStream in = null;
 			OutputStream out = null;
@@ -438,13 +446,17 @@ public class ItemView extends Activity {
 						int size = 0;
 						int count;
 						
-						while ((count = in.read(buffer, 0, bufferSize)) >= 0) {
+						while ((count = in.read(buffer, 0, bufferSize)) >= 0) {							
 							size += count;
+							
 							if (isCancelled()) {
 								Log.v("Book", "throw");
 								throw new IOException(CANCEL); // TODO: be nicer
 							}
 							out.write(buffer, 0, count);
+
+							if (byteCount)
+								publishProgress(BYTE_COUNT, size);
 						}
 						
 						Log.v("Book", "download size: "+size);
@@ -455,7 +467,8 @@ public class ItemView extends Activity {
 					}
 					catch(IOException e) {
 						tryCount++;
-						if (Integer.parseInt(options.getString(Options.PREF_RETRIES, "2")) < tryCount) {
+						if (Integer.parseInt(options.getString(Options.PREF_RETRIES, "2")) < tryCount ||
+								e.toString().contains(CANCEL)) {
 							throw(e);
 						}
 						else {
