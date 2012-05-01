@@ -57,7 +57,7 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class Browser extends Activity {
-	private static final String Market = "Market";
+	private static final String Market = "Appstore";
 	private static final String ALL = "All";
 	private static final String AUTHORS = "Authors"; 
 	private static final String GENRES = "Genres";
@@ -468,6 +468,7 @@ public class Browser extends Activity {
     		}
     	}
     	db.close();
+    	db = null;
     }
 
     private class PopulateListTask extends AsyncTask<Void, Integer, Cursor> {
@@ -504,7 +505,7 @@ public class Browser extends Activity {
     	}
     	
     	
-    	void updateDB() {
+    	private void updateDB() {
     		if (!forceUpdate) {
 	    		if (System.currentTimeMillis() < 7l * 86400l * 1000l + 
 	    				options.getLong(Options.PREF_UPDATE_SUCCEEDED, 0))
@@ -551,6 +552,9 @@ public class Browser extends Activity {
 
 		@Override
 		protected Cursor doInBackground(Void... arg0) {
+			if (db == null)
+				return null;
+			
 			updateDB();
 			
 			publishProgress(SEARCHING);

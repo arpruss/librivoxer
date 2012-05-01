@@ -147,6 +147,8 @@ public class Book {
 		" WHERE "+ DBID +"='"+id+"'";
 
 		Cursor cursor = db.rawQuery(query, emptyStringArray);
+		if (cursor == null)
+			return false;
 		Boolean exists = cursor.getCount()>0;
 		cursor.close();
 		return exists;
