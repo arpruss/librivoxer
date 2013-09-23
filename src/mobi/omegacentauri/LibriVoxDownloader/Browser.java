@@ -57,6 +57,7 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class Browser extends Activity {
+	private static final long DATABASE_UPDATED_TO = 1323410400;
 	private static final String Market = "Appstore";
 	private static final String ALL = "All";
 	private static final String AUTHORS = "Authors"; 
@@ -516,31 +517,31 @@ public class Browser extends Activity {
     		}
     		
     		publishProgress(UPDATING);
-
+    		
     		try {
 				SharedPreferences.Editor ed = options.edit();
-				ed.putLong(Options.PREF_UPDATE_TRIED, System.currentTimeMillis());
+				long triedAt = System.currentTimeMillis();
+				
+				ed.putLong(Options.PREF_UPDATE_TRIED, triedAt);
 				ed.commit();
 				
-				int added = 0;
-				for(int pos = 0;; pos+=50) {
-					URL url;
-					
-					url = new URL("https://catalog.librivox.org/latestworks.xml?offset="+pos+"&limit=50"); 
-					InputStream stream = url.openStream();
-					ParseToDB parser = new ParseToDB(stream, db);
-					if (!parser.parse(true)) {
-						throw new IOException("parsing");
-					}					
-					added += parser.getAdded();
-					if (parser.didHitOld() || 0 == parser.getAdded())
-						break;
-				}
+				// subtract a week from the time of last update in case device's clock
+				// was off
+				URL url = new URL("http://librivox.org/api/feed/audiobooks/?since="+
+							(options.getLong(Options.PREF_DATABASE_CURRENT_TO, DATABASE_UPDATED_TO)-7*86400)+
+							"&limit=999999");
+				Log.v("Book","updating "+url);
+				InputStream stream = url.openStream();
+				ParseToDB parser = new ParseToDB(stream, db);
+				if (!parser.parse(true)) {
+					throw new IOException("parsing");
+				}					
+				updated = parser.getAdded();
 				
 				ed = options.edit();
 				ed.putLong(Options.PREF_UPDATE_SUCCEEDED, System.currentTimeMillis());
+				ed.putLong(Options.PREF_DATABASE_CURRENT_TO, triedAt/1000);
 				ed.commit();
-				updated = added;
 			} catch (MalformedURLException e) {
 				updated = -1;
 				Log.v("Book", "Update "+e);

@@ -57,6 +57,14 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.RSSURL)) {
 				curBook.rssurl = getText();
 			}
+			else if (localName.equalsIgnoreCase(Book.XMLID)) {
+				try {
+					curBook.id = Integer.parseInt(getText());
+				}
+				catch (NumberFormatException e) {
+					curBook.id = -1;
+				}
+			}
 			else if (localName.equalsIgnoreCase(Book.TITLE)) {
 				curBook.title = getText();
 			}
@@ -106,15 +114,6 @@ public class BookHandler extends DefaultHandler {
 		super.startElement(uri, localName, name, attributes);
 		if (localName.equalsIgnoreCase("book")) {
 			curBook = new Book();
-			String value = attributes.getValue(Book.XMLID);
-			if (value != null) {
-				try {
-					curBook.id = Integer.parseInt(value);
-				}
-				catch (NumberFormatException e) {
-					curBook.id = -1;
-				}
-			}
 		}
 	}
 	

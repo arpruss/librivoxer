@@ -279,16 +279,19 @@ public class ItemView extends Activity {
 			ArrayList<String> did = new ArrayList<String>();
 			String dir = null;
 			try {
-				boolean ogg = options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG);
+//				boolean ogg = options.getString(Options.PREF_FORMAT, Options.OPT_OGG).equals(Options.OPT_OGG);
+				boolean ogg = false; // can't find ogg files!
 				boolean oggRSS = false;
 				URL url;
 				
 				publishProgress(INFO);
 				
-				String rssURL = book.rssurl;
-				if (rssURL.length() == 0) {
-					rssURL = "http://librivox.org/rss/"+id;
-				}
+//				String rssURL = book.rssurl;
+//				if (rssURL.length() == 0) {
+//					rssURL = "http://librivox.org/rss/"+id;
+//				}
+
+				String rssURL = "http://librivox.org/rss/"+id;
 				
 				if (ogg && rssURL.contains("/rss/")) {
 					rssURL = rssURL.replace("/rss/", "/rssogg/");
@@ -382,6 +385,7 @@ public class ItemView extends Activity {
 			}
 			
 			public void get(URL url, boolean ogg) throws IOException {
+				Log.v("Book", "MoreBookData:"+url);
 				String html = Utils.getStringFromURL(url);
 				if (ogg) {
 					Pattern pattern = Pattern.compile("<a\\s+href=['\"]([^'\"]+\\.ogg)['\"]",

@@ -26,6 +26,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String PREF_ID = "id";
 	public static final String PREF_FOLDER = "lvFolder";
 	public static final String PREF_RETRIES = "retries";
+	public static final String PREF_DATABASE_CURRENT_TO = "dbCurrentTo";
 	
 	private static String[] summaryKeys = { PREF_FORMAT, PREF_PLAY, PREF_RETRIES }; 
 	private static int[] summaryEntryValues = { R.array.formats, R.array.play_buttons, R.array.retries };

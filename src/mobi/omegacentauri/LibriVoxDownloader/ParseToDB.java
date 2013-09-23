@@ -64,6 +64,7 @@ public class ParseToDB implements BookSaver {
 
 	public void saveBook(Book book) {
 		if (updateOnly && book.existsInDB(db)) {
+			Log.v("Book", "already have "+book.title);
 			hitOld = true;
 		}
 		else {
