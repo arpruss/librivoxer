@@ -23,6 +23,8 @@ public class Book {
 	public static final String BOOK_TABLE = "tbl_books";
 	public static final String TITLE = "title";
 	public String title = "";
+	public static final String AUTHORS = "authors";
+	public Authors authors = null;
 	public static final String AUTHOR = "author";
 	public String author = "";
 	public static final String AUTHOR2 = "author2";

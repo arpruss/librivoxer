@@ -12,6 +12,9 @@ public class BookHandler extends DefaultHandler {
 	private Book curBook;
 	private StringBuilder builder;
 	private BookSaver saver;
+	private Authors curAuthors;
+	private Author curAuthor;
+	public static final String BOOK = "book";
 	
 	public BookHandler(BookSaver saver) {
 		this.saver = saver;
@@ -26,8 +29,26 @@ public class BookHandler extends DefaultHandler {
 	@Override
 	public void endElement(String uri, String localName, String name) throws SAXException {
 		super.endElement(uri, localName, name);
-		if (curBook != null) {
-			if (localName.equalsIgnoreCase(Book.AUTHOR)) {
+		if (curAuthor != null) {
+			if (localName.equalsIgnoreCase(Author.FIRST_NAME)) {
+				curAuthor.firstName = getText();
+			}
+			else if (localName.equalsIgnoreCase(Author.LAST_NAME)) {
+				curAuthor.lastName = getText();
+			}
+		}
+		else if (curAuthors != null) {
+			if (localName.equalsIgnoreCase(Authors.AUTHOR)) {
+				curAuthors.add(curAuthor);
+				curAuthor = null;
+			}
+		}
+		else if (curBook != null) {
+			if (localName.equalsIgnoreCase(Book.AUTHORS)) {
+				curBook.authors = curAuthors;
+				curAuthors = null;
+			}
+			else if (localName.equalsIgnoreCase(Book.AUTHOR)) {
 				curBook.author = cleanAuthor(getText());
 			}
 			else if (localName.equalsIgnoreCase(Book.AUTHOR2)) {
@@ -77,8 +98,24 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.ZIPFILE)) {
 				curBook.zipfile = getText();
 			}
-			else if (localName.equalsIgnoreCase("book")) {
-				if (curBook.author.length() == 0) {
+			else if (localName.equalsIgnoreCase(BOOK)) {
+				if (curBook.authors != null) {
+					
+					curBook.author = "";
+					curBook.author2 = "";
+					
+					if (curBook.authors.getCount() == 0) {
+						curBook.author = "unnamed";
+					}
+					else {
+						curBook.author = curBook.authors.get(0).getName();
+						if (curBook.authors.getCount() > 1) {
+							curBook.author2 = curBook.authors.get(1).getName();
+							/* TODO: handle more than two authors */
+						}
+					}
+				}
+				else if (curBook.author.length() == 0) {
 					if (curBook.author2.length() == 0) 
 						curBook.author = "unnamed";
 					else {
@@ -114,6 +151,12 @@ public class BookHandler extends DefaultHandler {
 		super.startElement(uri, localName, name, attributes);
 		if (localName.equalsIgnoreCase("book")) {
 			curBook = new Book();
+		}
+		else if (localName.equalsIgnoreCase(Book.AUTHORS)) {
+			curAuthors = new Authors();
+		}
+		else if (localName.equalsIgnoreCase(Authors.AUTHOR)) {
+			curAuthor = new Author();
 		}
 	}
 	
