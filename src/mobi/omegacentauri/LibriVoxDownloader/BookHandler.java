@@ -15,6 +15,7 @@ public class BookHandler extends DefaultHandler {
 	private Authors curAuthors;
 	private Author curAuthor;
 	public static final String BOOK = "book";
+	public static final String COMPLETED = "(completed)";
 	
 	public BookHandler(BookSaver saver) {
 		this.saver = saver;
@@ -29,6 +30,10 @@ public class BookHandler extends DefaultHandler {
 	@Override
 	public void endElement(String uri, String localName, String name) throws SAXException {
 		super.endElement(uri, localName, name);
+		if (localName.equalsIgnoreCase("xml")) {
+			Log.v("Book", "Done parsing");
+			throw new SAXException(COMPLETED);
+		}
 		if (curAuthor != null) {
 			if (localName.equalsIgnoreCase(Author.FIRST_NAME)) {
 				curAuthor.firstName = getText();
@@ -36,19 +41,24 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Author.LAST_NAME)) {
 				curAuthor.lastName = getText();
 			}
-		}
-		else if (curAuthors != null) {
-			if (localName.equalsIgnoreCase(Authors.AUTHOR)) {
+			else if (localName.equalsIgnoreCase(Authors.AUTHOR)) {
 				curAuthors.add(curAuthor);
 				curAuthor = null;
 			}
+			builder.setLength(0);
+//			Log.v("Book", ">"+localName);
 		}
-		else if (curBook != null) {
+		else if (curAuthors != null) {
+//			Log.v("Book", ">>"+localName);
 			if (localName.equalsIgnoreCase(Book.AUTHORS)) {
 				curBook.authors = curAuthors;
 				curAuthors = null;
 			}
-			else if (localName.equalsIgnoreCase(Book.AUTHOR)) {
+			builder.setLength(0);
+		}
+		else if (curBook != null) {
+//			Log.v("Book", ">>>"+localName);
+			if (localName.equalsIgnoreCase(Book.AUTHOR)) {
 				curBook.author = cleanAuthor(getText());
 			}
 			else if (localName.equalsIgnoreCase(Book.AUTHOR2)) {
@@ -81,6 +91,7 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.XMLID)) {
 				try {
 					curBook.id = Integer.parseInt(getText());
+					Log.v("Book", "id =  "+curBook.id);
 				}
 				catch (NumberFormatException e) {
 					curBook.id = -1;
@@ -124,6 +135,7 @@ public class BookHandler extends DefaultHandler {
 					}
 				}
 				if (0 <= curBook.id) {
+					Log.v("Book", "saving book by "+curBook.author);
 					saver.saveBook(curBook);
 				}
 			}

@@ -121,7 +121,7 @@ public class Book {
 	public Book(SQLiteDatabase db, int id) {
 		String query = "SELECT * FROM "+BOOK_TABLE+" WHERE "+DBID+"='"+id+"'";
 		Log.v("Book", query);
-		Cursor cursor = db.rawQuery(query, new String[] {});
+		Cursor cursor = db.rawQuery(query, emptyStringArray);
 		cursor.moveToFirst();
 		id = cursor.getInt(cursor.getColumnIndex(DBID));
 		author = cursor.getString(cursor.getColumnIndex(AUTHOR));
@@ -131,8 +131,9 @@ public class Book {
 		copyrightyear = cursor.getString(cursor.getColumnIndex(COPYRIGHTYEAR));
 		description = cursor.getString(cursor.getColumnIndex(DESCRIPTION));
 		etext = cursor.getString(cursor.getColumnIndex(ETEXT));
-		for (int i=0; i<MAX_GENRES; i++)
+		for (int i=0; i<MAX_GENRES; i++) {
 			genres[i] = cursor.getString(cursor.getColumnIndex(DBGENRE_PREFIX+i));
+		}
 		language = cursor.getString(cursor.getColumnIndex(LANGUAGE));
 		rssurl = cursor.getString(cursor.getColumnIndex(RSSURL));
 		title = cursor.getString(cursor.getColumnIndex(TITLE));
@@ -213,6 +214,8 @@ public class Book {
 	public void setGenres(String[] genres) {
 		int i;
 		for (i = 0; i < MAX_GENRES && i < genres.length; i++) {
+			if (genres[i] == null)
+				this.genres[i] = "";
 			String g = genres[i].trim();
 			if (g.equals("Literatur"))
 				g = "Literature";
@@ -354,13 +357,16 @@ public class Book {
 			info += language+"<br/>";
 		if (translator.length()>0) 
 			info += "Translated by "+translator+"<br/>";
+		Log.v("Book",info);
 		if (totaltime.length()>0)
 			info += "Length: "+totaltime+"<br/>";
+		Log.v("Book",info);
 		for (int i=0; i<MAX_GENRES; i++) {
-			if (genres[i].length()>0) {
+			if (genres[i] != null && genres[i].length()>0) {
 				if (i!=0)
 					info +=", ";
 				info += friendlyGenre(genres[i]);				
+				Log.v("Book",info);
 			}
 		}
 		info += "<br/>";

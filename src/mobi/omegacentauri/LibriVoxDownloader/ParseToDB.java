@@ -43,6 +43,7 @@ public class ParseToDB implements BookSaver {
 		hitOld = false;
 		added = 0;
 		this.updateOnly = updateOnly;
+		Log.v("Book", "parse "+hitOld+" "+added+ " "+updateOnly);
 		BookHandler handler = new BookHandler(this);
 		try {
 			if (stream != null)
@@ -54,6 +55,11 @@ public class ParseToDB implements BookSaver {
 			Log.v("Book", "error "+e);
 			return false;
 		} catch (SAXException e) {
+			if (e.toString().endsWith(BookHandler.COMPLETED))
+				return true;
+			Log.v("Book", "error "+e);
+			return false;
+		} catch (Exception e) {
 			Log.v("Book", "error "+e);
 			return false;
 		}

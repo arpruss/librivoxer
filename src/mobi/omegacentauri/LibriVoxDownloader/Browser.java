@@ -482,6 +482,7 @@ public class Browser extends Activity {
     	int updated = 0;
     	
     	public PopulateListTask(boolean forceUpdate) {
+    		Log.v("Book","PopulateListTask");
     		this.forceUpdate = forceUpdate;
     		if (searchBox.getVisibility()==View.VISIBLE &&
     				searchBox.getText().length()>0)
@@ -492,6 +493,7 @@ public class Browser extends Activity {
     	
     	@Override
     	protected void onPreExecute() {
+    		Log.v("Book","PopulateListTask.onPreExecute");
     		progress = new ProgressDialog(Browser.this);
     		progress.setCancelable(false);
     		progress.show();
@@ -542,6 +544,7 @@ public class Browser extends Activity {
 				ed.putLong(Options.PREF_UPDATE_SUCCEEDED, System.currentTimeMillis());
 				ed.putLong(Options.PREF_DATABASE_CURRENT_TO, triedAt/1000);
 				ed.commit();
+				Log.v("Book", "finished updating");
 			} catch (MalformedURLException e) {
 				updated = -1;
 				Log.v("Book", "Update "+e);
