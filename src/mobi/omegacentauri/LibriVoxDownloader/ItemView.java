@@ -200,7 +200,7 @@ public class ItemView extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
     	switch(item.getItemId()) {
     	case R.id.please_buy:
-    		Browser.pleaseBuy(this, true);
+    		new PleaseBuy(this, true);
     		return true;
     	case R.id.license:
     		Browser.license(this);

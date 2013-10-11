@@ -58,7 +58,6 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class Browser extends Activity {
 	private static final long DATABASE_UPDATED_TO = 1323410400;
-	private static final String Market = "Appstore";
 	private static final String ALL = "All";
 	private static final String AUTHORS = "Authors"; 
 	private static final String GENRES = "Genres";
@@ -142,7 +141,7 @@ public class Browser extends Activity {
 //        createDBFromXML();
         Log.v("Book", "-onCreate");
         
-        pleaseBuy(false);
+        new PleaseBuy(this,false);
     }
 	
 	boolean inAuthorSearch() {
@@ -693,54 +692,54 @@ public class Browser extends Activity {
     }
 	
 	private void pleaseBuy(boolean always) {
-		pleaseBuy(this, always);
+		new PleaseBuy(this, always);
 	}
 
-	public static void pleaseBuy(final Context c, boolean always) {
-		if (!always) {
-			SharedPreferences p = c.getSharedPreferences("PleaseBuy", 0);
-			int v;
-			try {
-				v = c.getPackageManager()
-					.getPackageInfo(c.getPackageName(),0).versionCode;
-			} catch (NameNotFoundException e) {
-				v = 0;
-			}
-			if (p.getInt("version", 0) == v) {
-				return;
-			}
-			SharedPreferences.Editor ed = p.edit();
-			ed.putInt("version", v);
-			ed.commit();
-		}
-		
-        AlertDialog alertDialog = new AlertDialog.Builder(c).create();
-
-        alertDialog.setTitle("Other applications?");
-        
-        alertDialog.setMessage("Do you wish to visit the "+Market+" "+
-        		"to find other applications from Omega Centauri Software?  You will "+
-        		"be able to return to SuperDim with the BACK button.  (You will "+
-        		"only be asked this once when you install a new version, but you "+
-        		"can always come back to this option by pulling up the menu.)");
-        
-        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
-        		"See other apps", 
-        	new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-            	Intent i = new Intent(Intent.ACTION_VIEW);
-            	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            	if (Market.contains("arket"))
-            		i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
-            	else
-            		i.setData(Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=mobi.pruss.force2sd&showAll=1"));            		
-            	c.startActivity(i);
-            } });
-        alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 
-        		"Not now", 
-        	new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {} });
-        alertDialog.show();				
-	}
+//	public static void pleaseBuy(final Context c, boolean always) {
+//		if (!always) {
+//			SharedPreferences p = c.getSharedPreferences("PleaseBuy", 0);
+//			int v;
+//			try {
+//				v = c.getPackageManager()
+//					.getPackageInfo(c.getPackageName(),0).versionCode;
+//			} catch (NameNotFoundException e) {
+//				v = 0;
+//			}
+//			if (p.getInt("version", 0) == v) {
+//				return;
+//			}
+//			SharedPreferences.Editor ed = p.edit();
+//			ed.putInt("version", v);
+//			ed.commit();
+//		}
+//		
+//        AlertDialog alertDialog = new AlertDialog.Builder(c).create();
+//
+//        alertDialog.setTitle("Other applications?");
+//        
+//        alertDialog.setMessage("Do you wish to visit the "+Market+" "+
+//        		"to find other applications from Omega Centauri Software?  You will "+
+//        		"be able to return to SuperDim with the BACK button.  (You will "+
+//        		"only be asked this once when you install a new version, but you "+
+//        		"can always come back to this option by pulling up the menu.)");
+//        
+//        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+//        		"See other apps", 
+//        	new DialogInterface.OnClickListener() {
+//            public void onClick(DialogInterface dialog, int which) {
+//            	Intent i = new Intent(Intent.ACTION_VIEW);
+//            	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            	if (Market.contains("arket"))
+//            		i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+//            	else
+//            		i.setData(Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=mobi.pruss.force2sd&showAll=1"));            		
+//            	c.startActivity(i);
+//            } });
+//        alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 
+//        		"Not now", 
+//        	new DialogInterface.OnClickListener() {
+//            public void onClick(DialogInterface dialog, int which) {} });
+//        alertDialog.show();				
+//	}
 
 }
