@@ -11,6 +11,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 import mobi.omegacentauri.LibriVoxDownloader.R;
 
 import android.app.AlertDialog;
@@ -528,11 +532,11 @@ public class Browser extends Activity {
 				
 				// subtract a week from the time of last update in case device's clock
 				// was off
-				URL url = new URL("http://librivox.org/api/feed/audiobooks/?since="+
+				URL url = new URL("https://librivox.org/api/feed/audiobooks/?since="+
 							(options.getLong(Options.PREF_DATABASE_CURRENT_TO, DATABASE_UPDATED_TO)-7*86400)+
 							"&limit=999999");
 				Log.v("Book","updating "+url);
-				InputStream stream = url.openStream();
+				InputStream stream = TrustAll.openStream(url);
 				ParseToDB parser = new ParseToDB(stream, db);
 				if (!parser.parse(true)) {
 					throw new IOException("parsing");

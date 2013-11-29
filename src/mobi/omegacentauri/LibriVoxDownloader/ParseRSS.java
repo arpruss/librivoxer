@@ -33,7 +33,7 @@ public class ParseRSS extends DefaultHandler {
 		inItem = 0;
 		inChannel = 0;
 
-		Xml.parse(url.openStream(), Xml.Encoding.UTF_8, this);
+		Xml.parse(TrustAll.openStream(url), Xml.Encoding.UTF_8, this);
 	}
 
 	@Override

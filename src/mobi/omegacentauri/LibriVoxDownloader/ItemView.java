@@ -291,7 +291,7 @@ public class ItemView extends Activity {
 //					rssURL = "http://librivox.org/rss/"+id;
 //				}
 
-				String rssURL = "http://librivox.org/rss/"+id;
+				String rssURL = "https://librivox.org/rss/"+id;
 				
 				if (ogg && rssURL.contains("/rss/")) {
 					rssURL = rssURL.replace("/rss/", "/rssogg/");
@@ -442,7 +442,7 @@ public class ItemView extends Activity {
 
 				while (!success) {
 					try {
-						in = url.openStream();
+						in = TrustAll.openStream(url);
 						tmpFile = new File(path + ".download");
 						tmpFile.delete();
 						out = new FileOutputStream(tmpFile);
