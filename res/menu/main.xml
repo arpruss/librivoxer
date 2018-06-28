@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="Update database" android:id="@+id/update" />
-    <item android:title="Options" android:id="@+id/options" />
-    <item android:title="License" android:id="@+id/license" />
-    <item android:title="More ω-Centauri apps" android:id="@+id/please_buy"></item>
-</menu>
