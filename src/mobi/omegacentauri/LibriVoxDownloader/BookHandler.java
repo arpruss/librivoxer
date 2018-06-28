@@ -17,6 +17,7 @@ public class BookHandler extends DefaultHandler {
 	public static final String BOOK = "book";
 	public static final String COMPLETED = "(completed)";
 	
+	
 	public BookHandler(BookSaver saver) {
 		this.saver = saver;
 	}

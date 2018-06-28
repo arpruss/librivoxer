@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -17,6 +18,7 @@ import javax.net.ssl.SSLSession;
 
 import mobi.omegacentauri.LibriVoxDownloader.R;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 
@@ -32,6 +34,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -46,6 +49,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.View.OnKeyListener;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -59,15 +64,17 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.TextView.OnEditorActionListener;
 
+@SuppressLint("NewApi")
 public class Browser extends Activity {
-	private static final long DATABASE_UPDATED_TO = 1323410400;
-	private static final String ALL = "All";
+	private static final long DATABASE_UPDATED_TO = 1385702958;
+	private static final String ALL = "All";        
 	private static final String AUTHORS = "Authors"; 
 	private static final String GENRES = "Genres";
 	private static final String[] topList = { ALL, AUTHORS, GENRES };
 	private static final int NUM_LISTS = 3;
-	private int currentList;
+	private int currentList = 0;
 	private String[] selectedItem;
 	private SQLiteDatabase db;
 	private ListView listView;
@@ -79,6 +86,8 @@ public class Browser extends Activity {
 	private boolean fastSearch;
 	
 	SharedPreferences options;
+	private int firstPos = -1;
+	private int prevPos = -1;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -124,7 +133,22 @@ public class Browser extends Activity {
 					int arg3) {
 			}});
 		
-        
+		searchBox.setOnEditorActionListener(new OnEditorActionListener() {
+			
+			@Override
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				switch(actionId) {
+				case EditorInfo.IME_ACTION_DONE:
+				case EditorInfo.IME_ACTION_SEARCH:
+					searchClick(null);
+					((InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE))
+						.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+					return true;
+				}
+				return false;
+			}
+		});
+		        
 
         CheckBox cb = (CheckBox)findViewById(R.id.installed);
         onlyInstalled = options.getBoolean(Options.PREF_ONLY_INSTALLED, false);
@@ -152,7 +176,6 @@ public class Browser extends Activity {
 		return currentList == 1 && selectedItem[0].equals(AUTHORS);
 	}
 	
-	
 	@Override
 	public void onStart() {
 		super.onStart();
@@ -166,13 +189,19 @@ public class Browser extends Activity {
 			return;
 		}
     	
-    	populateList();		
+    	populateList(firstPos);
+    	firstPos = -1;
 	}
 	
 	@Override
 	public void onStop() {
 		super.onStop();
 		
+		if (firstPos < 0) {
+			firstPos = listView.getFirstVisiblePosition();
+			Log.v("Book", "saved "+firstPos);
+		}
+
 		if (db != null) {
 			closeCursor(); // TODO: deactivate, not close
 			SharedPreferences.Editor ed = options.edit();
@@ -184,6 +213,7 @@ public class Browser extends Activity {
 
 	        db = null;
 		}
+		
 	}
 	
 	synchronized void doFastSearch() {
@@ -209,6 +239,10 @@ public class Browser extends Activity {
 	}
 	
 	synchronized void populateList() {
+		populateList(-1);
+	}
+	
+	synchronized void populateList(int restorePosition) {
     	Log.v("Book", "populating");
     	
 		fastSearch = false;
@@ -226,7 +260,15 @@ public class Browser extends Activity {
 			if (selectedItem[0].equals(GENRES)) {
 				searchBox.setVisibility(View.GONE);
 				searchButton.setVisibility(View.GONE);
-				setArrayList(Book.standardGenres); // TODO: allow extensions
+				String[] genres = new String[Book.standardGenres.length-1];
+				int j = 0;
+				for (String g : Book.standardGenres) {
+					if (! g.equals("Erotica")) { 
+						genres[j] = g;
+						j++;
+					}
+				}
+				setArrayList(genres); // TODO: allow extensions##
 			}
 			else {
 				searchBox.setVisibility(View.VISIBLE);
@@ -239,13 +281,13 @@ public class Browser extends Activity {
 					searchButton.setVisibility(View.VISIBLE);
 				}
 					
-				new PopulateListTask(false).execute();
+				new PopulateListTask(false, restorePosition).execute();
 			}
 			break;
 		case 2:
 			searchBox.setVisibility(selectedItem[0].equals(AUTHORS) ? View.GONE : View.VISIBLE );
 			searchButton.setVisibility(selectedItem[0].equals(AUTHORS) ? View.GONE : View.VISIBLE );
-			new PopulateListTask(false).execute();
+			new PopulateListTask(false, restorePosition).execute();
 			break;
 		}
 		
@@ -266,6 +308,7 @@ public class Browser extends Activity {
 		String text = (String)listView.getAdapter().getItem(position);
 		Log.v("Book", "Select "+text);
 		selectedItem[currentList] = text;
+		prevPos = listView.getFirstVisiblePosition();
 		currentList++;
 		populateList();
 		searchBox.setText("");
@@ -276,6 +319,7 @@ public class Browser extends Activity {
 		SharedPreferences.Editor ed = options.edit();
 		ed.putInt(Options.PREF_ID, cursor.getInt(0));
 		ed.commit();
+		firstPos = listView.getFirstVisiblePosition();
 		cursor.close();
 		startActivity(new Intent(this, ItemView.class));
 	}
@@ -373,6 +417,8 @@ public class Browser extends Activity {
 			return v;
 		}				
 	});
+        if (Build.VERSION.SDK_INT >= 11)
+        	listView.setFastScrollAlwaysVisible(list.length > 30);
 	}
 	
     @Override
@@ -381,12 +427,16 @@ public class Browser extends Activity {
 			if (searchBox.getVisibility() == View.VISIBLE && 
 					searchBox.getText().toString().length() > 0) {
 				searchBox.setText("");
+    			prevPos = -1;
     			populateList();
 			}
 			else {
 	    		if (currentList > 0) {
 	    			currentList--;
-	    			populateList();
+	    			if (currentList == 0)
+	    				prevPos = 0;
+	    			populateList(prevPos);
+	    			prevPos = -1;
 	    		}
 	    		else {
 	    			finish();
@@ -483,10 +533,12 @@ public class Browser extends Activity {
     	private boolean forceUpdate;
     	private String searchText;
     	int updated = 0;
+    	int setPos = -1;
     	
-    	public PopulateListTask(boolean forceUpdate) {
+    	public PopulateListTask(boolean forceUpdate, int setPos) {
     		Log.v("Book","PopulateListTask");
     		this.forceUpdate = forceUpdate;
+    		this.setPos = setPos;
     		if (searchBox.getVisibility()==View.VISIBLE &&
     				searchBox.getText().length()>0)
     			searchText = searchBox.getText().toString().trim();
@@ -600,6 +652,7 @@ public class Browser extends Activity {
 			if (updated > 0) {
 				Toast.makeText(Browser.this, "Added "+updated+
 						(updated > 1 ? " items": " item") + " to database", 3000).show();
+				setPos = -1;
 			}
 			else if (updated < 0) {
 				Toast.makeText(Browser.this, "Database update unsuccessful", 3000).show();
@@ -621,6 +674,10 @@ public class Browser extends Activity {
 				}
 				else {
 					setCursorList(cursor);
+				}
+				if (setPos >= 0) {
+					Log.v("Book", "setSelection "+setPos);
+					listView.setSelection(setPos);
 				}
 			}
 		}
@@ -676,13 +733,17 @@ public class Browser extends Activity {
 		return true;
 	}
 	
+	public void onOptionsButton(View v) {
+		startActivity(new Intent(this, Options.class));					
+	}
+	
 	public boolean onOptionsItemSelected(MenuItem item) {
     	switch(item.getItemId()) {
     	case R.id.please_buy:
     		pleaseBuy(true);
     		return true;
     	case R.id.update:
-			new PopulateListTask(true).execute();
+			new PopulateListTask(true,-1).execute();
 			return true;
     	case R.id.license:
     		license();

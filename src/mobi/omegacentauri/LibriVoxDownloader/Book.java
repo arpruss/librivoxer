@@ -120,7 +120,7 @@ public class Book {
 	
 	public Book(SQLiteDatabase db, int id) {
 		String query = "SELECT * FROM "+BOOK_TABLE+" WHERE "+DBID+"='"+id+"'";
-		Log.v("Book", query);
+//		Log.v("Book", query);
 		Cursor cursor = db.rawQuery(query, emptyStringArray);
 		cursor.moveToFirst();
 		id = cursor.getInt(cursor.getColumnIndex(DBID));
@@ -140,7 +140,7 @@ public class Book {
 		totaltime = cursor.getString(cursor.getColumnIndex(TOTALTIME));
 		translator = cursor.getString(cursor.getColumnIndex(TRANSLATOR));
 		zipfile = cursor.getString(cursor.getColumnIndex(ZIPFILE));
-		Log.v("Book", ""+cursor.getColumnIndex(INSTALLED));
+//		Log.v("Book", ""+cursor.getColumnIndex(INSTALLED));
 		installed = cursor.getString(cursor.getColumnIndex(INSTALLED));
 		cursor.close();
 	}
@@ -265,7 +265,7 @@ public class Book {
 		   (onlyInstalled ? " WHERE "+ONLY_INSTALLED : "") +
 		" UNION SELECT "+AUTHOR2+" FROM "+BOOK_TABLE+" WHERE "+ AUTHOR2 +"<>''"+
 		   (onlyInstalled ? " AND "+ONLY_INSTALLED : "");
-		Log.v("Book", query);
+//		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 	
@@ -288,7 +288,7 @@ public class Book {
 		   (onlyInstalled ? "AND "+ONLY_INSTALLED : "") +
 		   searchConjunct(searchText) +
 		   "ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;
-		Log.v("Book", query);
+//		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 
@@ -299,7 +299,7 @@ public class Book {
 		   (onlyInstalled ? "AND "+ONLY_INSTALLED+" " : "") +
 		   searchConjunct(searchText) +
 		   "ORDER BY "+TITLE;
-		Log.v("Book", query);
+//		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 	
@@ -318,7 +318,7 @@ public class Book {
 		
 		query += " ORDER BY "+AUTHOR+","+AUTHOR2+","+TITLE;			
 
-		Log.v("Book", query);
+//		Log.v("Book", query);
 		return db.rawQuery(query, emptyStringArray);
 	}
 	
@@ -330,7 +330,7 @@ public class Book {
 		int attr = SQLiteDatabase.OPEN_READWRITE;
 		if (create)
 			attr |= SQLiteDatabase.CREATE_IF_NECESSARY;
-		Log.v("Book", "opening "+getDBPath(context));
+//		Log.v("Book", "opening "+getDBPath(context));
 		return SQLiteDatabase.openDatabase(getDBPath(context), 
     			null, attr);
 	}
@@ -357,16 +357,16 @@ public class Book {
 			info += language+"<br/>";
 		if (translator.length()>0) 
 			info += "Translated by "+translator+"<br/>";
-		Log.v("Book",info);
+//		Log.v("Book",info);
 		if (totaltime.length()>0)
 			info += "Length: "+totaltime+"<br/>";
-		Log.v("Book",info);
+//		Log.v("Book",info);
 		for (int i=0; i<MAX_GENRES; i++) {
 			if (genres[i] != null && genres[i].length()>0) {
 				if (i!=0)
 					info +=", ";
 				info += friendlyGenre(genres[i]);				
-				Log.v("Book",info);
+//				Log.v("Book",info);
 			}
 		}
 		info += "<br/>";

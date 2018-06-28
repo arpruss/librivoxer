@@ -43,7 +43,7 @@ public class ParseToDB implements BookSaver {
 		hitOld = false;
 		added = 0;
 		this.updateOnly = updateOnly;
-		Log.v("Book", "parse "+hitOld+" "+added+ " "+updateOnly);
+//		Log.v("Book", "parse "+hitOld+" "+added+ " "+updateOnly);
 		BookHandler handler = new BookHandler(this);
 		try {
 			if (stream != null)
@@ -70,7 +70,7 @@ public class ParseToDB implements BookSaver {
 
 	public void saveBook(Book book) {
 		if (updateOnly && book.existsInDB(db)) {
-			Log.v("Book", "already have "+book.title);
+//			Log.v("Book", "already have "+book.title);
 			hitOld = true;
 		}
 		else {
