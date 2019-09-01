@@ -23,7 +23,6 @@ public class ParseRSS extends DefaultHandler {
 	private int inChannel;
 	
 	public ParseRSS(URL url) {
-		Log.v("Librivoxer", "parsing");
 		this.url = url;
 		list = null;
 	}
@@ -33,8 +32,11 @@ public class ParseRSS extends DefaultHandler {
 		link = null;
 		inItem = 0;
 		inChannel = 0;
+		
+		Log.v("librivoxer", "parse");
 
 		Xml.parse(TrustAll.openStream(url), Xml.Encoding.UTF_8, this);
+		Log.v("librivoxer", "parsed");
 	}
 
 	@Override
@@ -48,20 +50,28 @@ public class ParseRSS extends DefaultHandler {
 		super.endElement(uri, localName, name);
 		if (localName.equalsIgnoreCase("item")) {
 			inItem--;
+			Log.v("librivoxer", "-item");
 		}
 		else if (localName.equalsIgnoreCase("channel")) {
 			inChannel--;
+			Log.v("librivoxer", "-channel");
 		}
 		else if (localName.equalsIgnoreCase("link")) {
-			if (inChannel == 1 && inItem == 0 && link == null) {
-				link = builder.toString().trim();
+			if (inChannel == 1 && inItem == 0) {
+				String l = builder.toString().trim();
+				if (l.length() > 0) {
+					link = l;
+				}
 			}
-/*			else if (inItem == 1) {
+			else if (inItem == 1) {
+				Log.v("librivoxer", "link inItem");
 				try {
-					list.add(new URL(builder.toString().trim()));
+					String l = builder.toString().trim(); 
+					if (l.endsWith(".mp3") || l.endsWith(".ogg"))
+						list.add(new URL(l));
 				} catch (MalformedURLException e) {
 				}
-			} */
+			}
 		}
 		builder.setLength(0);
 	}
@@ -71,19 +81,19 @@ public class ParseRSS extends DefaultHandler {
 			Attributes attributes) throws SAXException {
 		super.startElement(uri, localName, name, attributes);
 		if (localName.equalsIgnoreCase("item")) {
-			Log.v("Librivoxer", "item");
+			Log.v("librivoxer", "+item");
 			inItem++;
 		}
 		else if (localName.equalsIgnoreCase("channel")) {
+			Log.v("librivoxer", "+channel");
 			inChannel++;
 		}
-		else if (localName.equalsIgnoreCase("enclosure") && inItem == 1) {
-			Log.v("Librivoxer", "enclosure");
+		else if (localName.equalsIgnoreCase("enclosure") && inItem > 0) {
+			String url = attributes.getValue("url");
 			try {
-				URL url = new URL(attributes.getValue("url").toString().trim());
-				list.add(url);
-			} catch (Exception e) {
-				Log.e("Librivoxer", ""+e);
+				list.add(new URL(url.trim()));
+			}
+			catch(MalformedURLException e) {
 			}
 		}
 	}
@@ -96,7 +106,7 @@ public class ParseRSS extends DefaultHandler {
 	
 	
 	public String getLink() {
-		Log.v("Librivoxer", "link = "+link);
+		Log.v("librivoxer", "rss link "+link);
 		return link;
 	}
 
