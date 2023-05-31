@@ -97,6 +97,8 @@ public class Browser extends Activity {
         curItems = null;
         selectedItem = new String[NUM_LISTS];
         options = PreferenceManager.getDefaultSharedPreferences(this);
+
+
         
         for (int i=0; i < NUM_LISTS; i++)
         	selectedItem[i] = options.getString(Options.PREF_SELECTED_ITEM_PREFIX+i, "");

@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "27.0.3"
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "mobi.omegacentauri.LibriVoxDownloader"
         minSdkVersion 3
-        targetSdkVersion 4
+        targetSdkVersion 29
     }
 
     buildTypes {
