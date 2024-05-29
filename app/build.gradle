@@ -8,6 +8,8 @@ android {
         minSdkVersion 3
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 33
+        versionCode 35
+        versionName "1.35"
     }
 
     buildTypes {

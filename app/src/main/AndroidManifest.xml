@@ -5,9 +5,7 @@
       android:smallScreens="true"
       android:normalScreens="true"
       android:largeScreens="true"
-      android:anyDensity="true"
-      android:versionCode="33"
-      android:versionName="1.13">
+      android:anyDensity="true">
 
 	<uses-permission
         android:name="android.permission.INTERNET" />
