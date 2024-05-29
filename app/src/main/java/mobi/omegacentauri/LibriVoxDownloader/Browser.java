@@ -1,22 +1,17 @@
 package mobi.omegacentauri.LibriVoxDownloader;
 
+import static android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS;
+import static android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSession;
-
-import mobi.omegacentauri.LibriVoxDownloader.R;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -27,7 +22,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -36,7 +31,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.Html;
 import android.text.SpannableString;
@@ -48,10 +45,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.View.OnKeyListener;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -60,7 +55,6 @@ import android.widget.CompoundButton;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -98,8 +92,6 @@ public class Browser extends Activity {
         selectedItem = new String[NUM_LISTS];
         options = PreferenceManager.getDefaultSharedPreferences(this);
 
-
-        
         for (int i=0; i < NUM_LISTS; i++)
         	selectedItem[i] = options.getString(Options.PREF_SELECTED_ITEM_PREFIX+i, "");
         
@@ -167,21 +159,68 @@ public class Browser extends Activity {
 			}});
     	
         
-        createDBFromSplit();
 //        createDBFromXML();
         Log.v("Book", "-onCreate");
         
         new PleaseBuy(this,false);
     }
-	
+
+	private boolean haveFileAccessPermission() {
+		Log.v("Book", "check file access");
+		if (Build.VERSION.SDK_INT < 23)
+			return true;
+
+		if (Build.VERSION.SDK_INT < 30 && PackageManager.PERMISSION_GRANTED == checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE"))
+			return true;
+		if (Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private void getFileAccessPermission() {
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		alertDialog.setTitle("File Access Permission");
+		alertDialog.setMessage("In order to download books to your chosen storage location, you will need give file access permission. Without this permission, Librivox Downloader is useless.");
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+
+						Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+						Uri uri = Uri.fromParts("package", getPackageName(), null);
+						intent.setData(uri);
+						startActivity(intent);
+
+
+//						Intent intent = new Intent(ACTION_APPLICATION_DETAILS_SETTINGS,//ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION,
+//								Uri.parse("package:mobi.omegacentauri.LibriVoxDownloader"));
+//						finish();
+//						startActivity(intent); // ForResult(intent, 501);
+					} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {
+				finish();
+			} });
+		alertDialog.show();
+	}
+
 	boolean inAuthorSearch() {
 		return currentList == 1 && selectedItem[0].equals(AUTHORS);
 	}
 	
 	@Override
-	public void onStart() {
-		super.onStart();
-		
+	public void onResume() {
+		super.onResume();
+
+		if (! haveFileAccessPermission()) {
+			getFileAccessPermission();
+			return;
+		}
+
+		createDBFromSplit();
+
 		try {
 			db = Book.getDB(this);
 		}
@@ -190,7 +229,7 @@ public class Browser extends Activity {
 			finish();
 			return;
 		}
-    	
+
     	populateList(firstPos);
     	firstPos = -1;
 	}
@@ -451,10 +490,10 @@ public class Browser extends Activity {
 
 
 
-    private void createDBFromSplit() {
+    private boolean createDBFromSplit() {
     	File dbFile = new File(Book.getDBPath(this)); 
     	if (dbFile.exists() && dbFile.length() > 2000000)
-    		return;
+    		return false;
 
     	OutputStream out;
 
@@ -464,7 +503,7 @@ public class Browser extends Activity {
 			// TODO Auto-generated catch block
 			Toast.makeText(this, "Cannot create database", 2000).show();
 			finish();
-			return;
+			return false;
 		}
     	
     	AssetManager assets = getAssets();
@@ -485,7 +524,8 @@ public class Browser extends Activity {
     		catch (IOException e) {
     			done = true;
     		}
-    	}   
+    	}
+		return true;
     }
     
     public static boolean copyStream(InputStream in, OutputStream out) {

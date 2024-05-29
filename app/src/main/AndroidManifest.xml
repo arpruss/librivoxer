@@ -6,24 +6,22 @@
       android:normalScreens="true"
       android:largeScreens="true"
       android:anyDensity="true"
-      android:versionCode="32"
-      android:versionName="1.12">
-    <uses-sdk android:minSdkVersion="3"  android:targetSdkVersion="29"/>
-    
+      android:versionCode="33"
+      android:versionName="1.13">
+
 	<uses-permission
         android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-        
+
     <application android:icon="@drawable/icon" android:label="@string/app_name"
-        android:requestLegacyExternalStorage="true"
         >
         <activity android:name=".Browser"
                   android:label="@string/app_name"    			 
                   android:configChanges="keyboard|keyboardHidden|orientation"
-                  >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -32,7 +30,8 @@
     	<activity android:name=".ItemView"
         		android:configChanges="keyboard|keyboardHidden|orientation"/>
     	<activity android:name=".FolderChooser"
-        		android:configChanges="keyboard|keyboardHidden|orientation">
+        		android:configChanges="keyboard|keyboardHidden|orientation"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <action android:name="mobi.omegacentauri.LibriVoxDownloader.FOLDER" />

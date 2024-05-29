@@ -22,9 +22,12 @@ public class MarketDetector {
 	
 	public static int detect(Context c) {
 		PackageManager pm = c.getPackageManager();
-				
-		String installer = pm.getInstallerPackageName(c.getPackageName());
-		
+
+		String installer = null;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.ECLAIR) {
+			installer = pm.getInstallerPackageName(c.getPackageName());
+		}
+
 		if (installer != null && installer.equals("com.android.vending")) 
 			return MARKET;
 		
