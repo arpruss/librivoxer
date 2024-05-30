@@ -1,8 +1,5 @@
 package mobi.omegacentauri.LibriVoxDownloader;
 
-import static android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS;
-import static android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -27,6 +24,7 @@ import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.icu.text.CaseMap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -59,6 +57,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.TextView.OnEditorActionListener;
+
+import androidx.documentfile.provider.DocumentFile;
 
 @SuppressLint("NewApi")
 public class Browser extends Activity {
@@ -179,25 +179,15 @@ public class Browser extends Activity {
 		return false;
 	}
 
-	private void getFileAccessPermission() {
+	private void showChooser() {
 		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 
-		alertDialog.setTitle("File Access Permission");
-		alertDialog.setMessage("In order to download books to your chosen storage location, you will need give file access permission. Without this permission, Librivox Downloader is useless.");
+		alertDialog.setTitle("Choose Save Folder");
+		alertDialog.setMessage("You will need to choose a location to save files to.");
 		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK",
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
-
-						Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-						Uri uri = Uri.fromParts("package", getPackageName(), null);
-						intent.setData(uri);
-						startActivity(intent);
-
-
-//						Intent intent = new Intent(ACTION_APPLICATION_DETAILS_SETTINGS,//ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION,
-//								Uri.parse("package:mobi.omegacentauri.LibriVoxDownloader"));
-//						finish();
-//						startActivity(intent); // ForResult(intent, 501);
+						FolderChooser.choose(Browser.this);
 					} });
 		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
 			public void onCancel(DialogInterface dialog) {
@@ -214,11 +204,6 @@ public class Browser extends Activity {
 	public void onResume() {
 		super.onResume();
 
-		if (! haveFileAccessPermission()) {
-			getFileAccessPermission();
-			return;
-		}
-
 		createDBFromSplit();
 
 		try {
@@ -232,6 +217,16 @@ public class Browser extends Activity {
 
     	populateList(firstPos);
     	firstPos = -1;
+
+		String folderUri = options.getString(Options.PREF_FOLDER_URI, "");
+		// TODO: check for deletion
+		if (folderUri.length() > 0) {
+			DocumentFile documentFile = DocumentFile.fromTreeUri(this, Uri.parse(folderUri));
+			if (!documentFile.exists())
+				folderUri = "";
+		}
+		if (folderUri.length() == 0)
+			showChooser();
 	}
 	
 	@Override
@@ -755,6 +750,11 @@ public class Browser extends Activity {
 	private void license() {
 		license(this);
 	}
+
+	protected void onActivityResult(int requestCode, int resultCode,
+									Intent data) {
+		FolderChooser.result(this, requestCode,resultCode,data);
+	}
 	
 	public static void license(Context context) {
 		AlertDialog alertDialog = new AlertDialog.Builder(context).create();
@@ -790,6 +790,9 @@ public class Browser extends Activity {
     	case R.id.license:
     		license();
     		return true;
+		case R.id.folder:
+			FolderChooser.choose(this);
+			return true;
     	case R.id.options:
 			startActivity(new Intent(this, Options.class));			
 			return true;

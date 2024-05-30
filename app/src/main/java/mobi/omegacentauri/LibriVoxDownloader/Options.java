@@ -24,19 +24,15 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public static final String OPT_PLAYLIST = "playlist";
 	public static final String OPT_LAUNCH = "launch";
 	public static final String PREF_ID = "id";
-	public static final String PREF_FOLDER = "lvFolder";
 	public static final String PREF_RETRIES = "retries";
 	public static final String PREF_DATABASE_CURRENT_TO = "dbCurrentTo";
-	
-	private static String[] summaryKeys = { PREF_PLAY, PREF_RETRIES }; 
-	private static int[] summaryEntryValues = { R.array.play_buttons, R.array.retries };
-	private static int[] summaryEntryLabels = { R.array.play_button_labels, R.array.retries };
-	private static String[] summaryDefaults = { OPT_PLAYLIST, "2" };
-	
-	public static String defaultFolder() {
-		return Environment.getExternalStorageDirectory() + "/" + "LibriVox";
-	}
+    public static final String PREF_FOLDER_URI = "folderUri";//for SDK 19 and above
 
+    private static String[] summaryKeys = { /*PREF_PLAY,*/ PREF_RETRIES };
+	private static int[] summaryEntryValues = { /*R.array.play_buttons,*/ R.array.retries };
+	private static int[] summaryEntryLabels = { /*R.array.play_button_labels,*/ R.array.retries };
+	private static String[] summaryDefaults = { /*OPT_PLAYLIST,*/ "2" };
+	
 	public static String getString(SharedPreferences options, String key) {
 	for (int i=0; i<summaryKeys.length; i++)
 		if (summaryKeys[i].equals(key)) 
