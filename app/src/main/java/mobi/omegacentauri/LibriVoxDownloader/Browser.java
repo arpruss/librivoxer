@@ -62,7 +62,7 @@ import androidx.documentfile.provider.DocumentFile;
 
 @SuppressLint("NewApi")
 public class Browser extends Activity {
-	private static final long DATABASE_UPDATED_TO = 1385702958;
+	private static final long DATABASE_UPDATED_TO = 1717162247; // 1385702958;
 	private static final String ALL = "All";        
 	private static final String AUTHORS = "Authors"; 
 	private static final String GENRES = "Genres";
@@ -160,13 +160,13 @@ public class Browser extends Activity {
     	
         
 //        createDBFromXML();
-        Log.v("Book", "-onCreate");
+        Log.v("LibriVoxer", "-onCreate");
         
         new PleaseBuy(this,false);
     }
 
 	private boolean haveFileAccessPermission() {
-		Log.v("Book", "check file access");
+		Log.v("LibriVoxer", "check file access");
 		if (Build.VERSION.SDK_INT < 23)
 			return true;
 
@@ -210,7 +210,7 @@ public class Browser extends Activity {
 			db = Book.getDB(this);
 		}
 		catch (SQLiteException e) {
-			Toast.makeText(this, "Cannot open db: contact developer", 5000).show();
+			Toast.makeText(this, "Cannot open db: contact developer", Toast.LENGTH_LONG).show();
 			finish();
 			return;
 		}
@@ -235,7 +235,7 @@ public class Browser extends Activity {
 		
 		if (firstPos < 0) {
 			firstPos = listView.getFirstVisiblePosition();
-			Log.v("Book", "saved "+firstPos);
+			Log.v("LibriVoxer", "saved "+firstPos);
 		}
 
 		if (db != null) {
@@ -279,7 +279,7 @@ public class Browser extends Activity {
 	}
 	
 	synchronized void populateList(int restorePosition) {
-    	Log.v("Book", "populating");
+    	Log.v("LibriVoxer", "populating");
     	
 		fastSearch = false;
 		
@@ -292,7 +292,7 @@ public class Browser extends Activity {
 			setArrayList(topList);
 			break;
 		case 1:
-			Log.v("Book", "Level 1 "+selectedItem[0]);
+			Log.v("LibriVoxer", "Level 1 "+selectedItem[0]);
 			if (selectedItem[0].equals(GENRES)) {
 				searchBox.setVisibility(View.GONE);
 				searchButton.setVisibility(View.GONE);
@@ -309,7 +309,7 @@ public class Browser extends Activity {
 			else {
 				searchBox.setVisibility(View.VISIBLE);
 				if (selectedItem[0].equals(AUTHORS)) {
-					Log.v("Book", "noSB vis");
+					Log.v("LibriVoxer", "noSB vis");
 					searchButton.setVisibility(View.GONE);
 					fastSearch = true;
 				}
@@ -332,7 +332,7 @@ public class Browser extends Activity {
 	}
 	
 	public void searchClick(View view) {
-		Log.v("Book", "searchClick");
+		Log.v("LibriVoxer", "searchClick");
 		if (currentList == 0) {
 			selectedItem[0] = ALL;
 			currentList = 1;
@@ -342,7 +342,7 @@ public class Browser extends Activity {
 	
 	private void arrayListSelect(int position) {
 		String text = (String)listView.getAdapter().getItem(position);
-		Log.v("Book", "Select "+text);
+		Log.v("LibriVoxer", "Select "+text);
 		selectedItem[currentList] = text;
 		prevPos = listView.getFirstVisiblePosition();
 		currentList++;
@@ -417,7 +417,7 @@ public class Browser extends Activity {
 	}
 
 	private void setArrayList(String[] list) {
-		Log.v("Book", "Set array list "+list.length);
+		Log.v("LibriVoxer", "Set array list "+list.length);
 		curItems = list;
 		
 		if (fastSearch)
@@ -487,8 +487,12 @@ public class Browser extends Activity {
 
     private boolean createDBFromSplit() {
     	File dbFile = new File(Book.getDBPath(this)); 
-    	if (dbFile.exists() && dbFile.length() > 2000000)
-    		return false;
+    	if (dbFile.exists() && dbFile.length() >= 20314112) {
+			Log.v("LibriVoxer", "database ready");
+			return false;
+		}
+
+		Log.v("LibriVoxer", "need to get DB");
 
     	OutputStream out;
 
@@ -496,7 +500,7 @@ public class Browser extends Activity {
 			out = new FileOutputStream(dbFile);
 		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
-			Toast.makeText(this, "Cannot create database", 2000).show();
+			Toast.makeText(this, "Cannot create database", Toast.LENGTH_LONG).show();
 			finish();
 			return false;
 		}
@@ -507,12 +511,13 @@ public class Browser extends Activity {
     	
 		for (int i=0; i<100 & !done; i++ ) {
     		try {
-    			Log.v("Book", "opening "+i);
-    			InputStream in = assets.open("booksdb0"+i);
+				String name = String.format("booksdb%02d",i);
+    			Log.v("LibriVoxer", "opening "+name);
+    			InputStream in = assets.open(name);
     			if (!copyStream(in, out)) {
     				out.close();
     				dbFile.delete();
-    				Toast.makeText(this, "Cannot create database", 2000).show();
+    				Toast.makeText(this, "Cannot create database", Toast.LENGTH_LONG).show();
     				finish();
     			}
     		}
@@ -550,7 +555,7 @@ public class Browser extends Activity {
     	boolean done = false;
     	for (int i=1; i<100 & !done; i++ ) {
     		try {
-    			Log.v("Book", "parsing "+i);
+    			Log.v("LibriVoxer", "parsing "+i);
     			ParseToDB pa = new ParseToDB(getAssets().open("catalog"+i+".xml"), db);
     			pa.parse(false);
     		}
@@ -573,7 +578,7 @@ public class Browser extends Activity {
     	int setPos = -1;
     	
     	public PopulateListTask(boolean forceUpdate, int setPos) {
-    		Log.v("Book","PopulateListTask");
+    		Log.v("LibriVoxer","PopulateListTask");
     		this.forceUpdate = forceUpdate;
     		this.setPos = setPos;
     		if (searchBox.getVisibility()==View.VISIBLE &&
@@ -585,7 +590,7 @@ public class Browser extends Activity {
     	
     	@Override
     	protected void onPreExecute() {
-    		Log.v("Book","PopulateListTask.onPreExecute");
+    		Log.v("LibriVoxer","PopulateListTask.onPreExecute");
     		progress = new ProgressDialog(Browser.this);
     		progress.setCancelable(false);
     		progress.show();
@@ -624,7 +629,7 @@ public class Browser extends Activity {
 				URL url = new URL("https://librivox.org/api/feed/audiobooks/?since="+
 							(options.getLong(Options.PREF_DATABASE_CURRENT_TO, DATABASE_UPDATED_TO)-7*86400)+
 							"&limit=999999");
-				Log.v("Book","updating "+url);
+				Log.v("LibriVoxer","updating "+url);
 				InputStream stream = TrustAll.openStream(url);
 				ParseToDB parser = new ParseToDB(stream, db);
 				if (!parser.parse(true)) {
@@ -636,13 +641,13 @@ public class Browser extends Activity {
 				ed.putLong(Options.PREF_UPDATE_SUCCEEDED, System.currentTimeMillis());
 				ed.putLong(Options.PREF_DATABASE_CURRENT_TO, triedAt/1000);
 				ed.commit();
-				Log.v("Book", "finished updating");
+				Log.v("LibriVoxer", "finished updating");
 			} catch (MalformedURLException e) {
 				updated = -1;
-				Log.v("Book", "Update "+e);
+				Log.v("LibriVoxer", "Update "+e);
 			} catch (IOException e) {
 				updated = -1;
-				Log.v("Book", "Update "+e);
+				Log.v("LibriVoxer", "Update "+e);
 			}    		
     	}
 
@@ -685,7 +690,7 @@ public class Browser extends Activity {
 		@Override
 		protected void onPostExecute(Cursor cursor) {
 			progress.dismiss();
-			Log.v("Book", "updated "+updated);
+			Log.v("LibriVoxer", "updated "+updated);
 			if (updated > 0) {
 				Toast.makeText(Browser.this, "Added "+updated+
 						(updated > 1 ? " items": " item") + " to database", 3000).show();
@@ -703,7 +708,7 @@ public class Browser extends Activity {
 				}
 			}
 			else {
-				Log.v("Book", "cl="+currentList+" si="+selectedItem[0]);
+				Log.v("LibriVoxer", "cl="+currentList+" si="+selectedItem[0]);
 				if (currentList == 1 && selectedItem[0].equals(AUTHORS)) {
 					setArrayList(cursorToArray(cursor));
 					cursor.close();
@@ -713,7 +718,7 @@ public class Browser extends Activity {
 					setCursorList(cursor);
 				}
 				if (setPos >= 0) {
-					Log.v("Book", "setSelection "+setPos);
+					Log.v("LibriVoxer", "setSelection "+setPos);
 					listView.setSelection(setPos);
 				}
 			}

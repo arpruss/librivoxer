@@ -458,7 +458,7 @@ public class ItemView extends Activity {
 					"");
 			if (dir.length() <= 0)
 				return null; // TODO
-			Log.v("Book", "folder: "+dir);
+			Log.v("LibriVoxer", "folder: "+dir);
 			return DocumentFile.fromTreeUri(ItemView.this, Uri.parse(dir)).createDirectory(b);
 		}
 		

@@ -32,7 +32,7 @@ public class BookHandler extends DefaultHandler {
 	public void endElement(String uri, String localName, String name) throws SAXException {
 		super.endElement(uri, localName, name);
 		if (localName.equalsIgnoreCase("xml")) {
-			Log.v("Book", "Done parsing");
+			Log.v("LibriVoxer", "Done parsing");
 			throw new SAXException(COMPLETED);
 		}
 		if (curAuthor != null) {
@@ -47,10 +47,10 @@ public class BookHandler extends DefaultHandler {
 				curAuthor = null;
 			}
 			builder.setLength(0);
-//			Log.v("Book", ">"+localName);
+//			Log.v("LibriVoxer", ">"+localName);
 		}
 		else if (curAuthors != null) {
-//			Log.v("Book", ">>"+localName);
+//			Log.v("LibriVoxer", ">>"+localName);
 			if (localName.equalsIgnoreCase(Book.AUTHORS)) {
 				curBook.authors = curAuthors;
 				curAuthors = null;
@@ -58,7 +58,7 @@ public class BookHandler extends DefaultHandler {
 			builder.setLength(0);
 		}
 		else if (curBook != null) {
-//			Log.v("Book", ">>>"+localName);
+//			Log.v("LibriVoxer", ">>>"+localName);
 			if (localName.equalsIgnoreCase(Book.AUTHOR)) {
 				curBook.author = cleanAuthor(getText());
 			}
@@ -92,7 +92,7 @@ public class BookHandler extends DefaultHandler {
 			else if (localName.equalsIgnoreCase(Book.XMLID)) {
 				try {
 					curBook.id = Integer.parseInt(getText());
-					Log.v("Book", "id =  "+curBook.id);
+					Log.v("LibriVoxer", "id =  "+curBook.id);
 				}
 				catch (NumberFormatException e) {
 					curBook.id = -1;
@@ -136,7 +136,7 @@ public class BookHandler extends DefaultHandler {
 					}
 				}
 				if (0 <= curBook.id) {
-					Log.v("Book", "saving book by "+curBook.author);
+					Log.v("LibriVoxer", "saving book by "+curBook.author);
 					saver.saveBook(curBook);
 				}
 			}

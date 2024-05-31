@@ -43,7 +43,7 @@ public class ParseToDB implements BookSaver {
 		hitOld = false;
 		added = 0;
 		this.updateOnly = updateOnly;
-//		Log.v("Book", "parse "+hitOld+" "+added+ " "+updateOnly);
+//		Log.v("LibriVoxer", "parse "+hitOld+" "+added+ " "+updateOnly);
 		BookHandler handler = new BookHandler(this);
 		try {
 			if (stream != null)
@@ -52,15 +52,15 @@ public class ParseToDB implements BookSaver {
 				Xml.parse(xmlData, handler);
 			return true;
 		} catch (IOException e) {
-			Log.v("Book", "error "+e);
+			Log.v("LibriVoxer", "error "+e);
 			return false;
 		} catch (SAXException e) {
 			if (e.toString().endsWith(BookHandler.COMPLETED))
 				return true;
-			Log.v("Book", "error "+e);
+			Log.v("LibriVoxer", "error "+e);
 			return false;
 		} catch (Exception e) {
-			Log.v("Book", "error "+e);
+			Log.v("LibriVoxer", "error "+e);
 			return false;
 		}
 	}
@@ -70,7 +70,7 @@ public class ParseToDB implements BookSaver {
 
 	public void saveBook(Book book) {
 		if (updateOnly && book.existsInDB(db)) {
-//			Log.v("Book", "already have "+book.title);
+//			Log.v("LibriVoxer", "already have "+book.title);
 			hitOld = true;
 		}
 		else {
@@ -78,7 +78,7 @@ public class ParseToDB implements BookSaver {
 			book.saveToDB(db);
 			
 			if (updateOnly)
-				Log.v("Book", "add:"+book.title);
+				Log.v("LibriVoxer", "add:"+book.title);
 		}
 	}
 

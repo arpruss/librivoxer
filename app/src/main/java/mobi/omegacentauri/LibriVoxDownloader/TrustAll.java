@@ -61,7 +61,7 @@ public class TrustAll {
 
 
 	public static InputStream openStream(URL url) throws IOException {
-		Log.v("Book", "reading "+url);
+		Log.v("LibriVoxer", "reading "+url);
 		return url.openStream();
 //		try {
 //			if (true || ! url.getProtocol().equalsIgnoreCase(("https")))
